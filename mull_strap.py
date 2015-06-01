@@ -10,8 +10,8 @@ from __future__ import (
 
 
 from bs4 import BeautifulSoup
-from PIL import Image
 from requests import Session
+from sh import display
 from urlparse import urljoin
 
 
@@ -40,10 +40,9 @@ if __name__ == '__main__':
         stream=True
     )
 
-    captcha = Image.open(captcha_response.raw)
-    captcha.show()
-
+    captcha = display(_in=captcha_response.raw, _bg=True)
     captcha_value = raw_input('Enter captcha: ')
+    captcha.process.kill()
 
     login_response = session.post(
         setup_url,
