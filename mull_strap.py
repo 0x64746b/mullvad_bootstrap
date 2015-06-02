@@ -11,6 +11,7 @@ from __future__ import (
 
 import collections
 from os import path
+import re
 import sys
 import tempfile
 import urlparse
@@ -152,11 +153,29 @@ class WebClient(object):
             print(' - {}'.format(error))
 
 
+class FileManager(object):
+
+    @staticmethod
+    def unzip(zip_file):
+        print('Unzipping config file', zip_file)
+
+        tmp_dir = path.dirname(zip_file)
+        process = sh.unzip(zip_file, '-d', tmp_dir)
+        output_dir = re.search(
+            '^ extracting: {}/(\d+)/.+  $'.format(tmp_dir),
+            process.stdout,
+            re.MULTILINE
+        ).group(1)
+
+        return path.join(tmp_dir, output_dir)
+
+
 if __name__ == '__main__':
     mullvad = WebClient()
     try:
-        config = mullvad.create_account()
+        config_file = mullvad.create_account()
     except LoginError as exception:
         sys.exit('Ultimately failed to create account')
     else:
-        print('Successfully downloaded config file:', config)
+        config_dir = FileManager.unzip(config_file)
+        print('Extracted config files to', config_dir)
