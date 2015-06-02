@@ -10,12 +10,14 @@ from __future__ import (
 
 
 from collections import namedtuple
+from os import path
+import sys
+import tempfile
+from urlparse import urljoin
 
 from bs4 import BeautifulSoup
 from requests import Session
 from sh import display
-import sys
-from urlparse import urljoin
 
 
 class LoginError(Exception):
@@ -31,6 +33,7 @@ class Mullvad(object):
 
     DOMAIN = 'https://mullvad.net'
     SETUP_PATH = '/en/setup/openvpn/'
+    CONFIG_PATH = '/en/config/?server=se'
 
     Captcha = namedtuple('Captcha', ['id', 'code'])
 
@@ -38,6 +41,7 @@ class Mullvad(object):
 
         self._session = Session()
         self._setup_url = urljoin(Mullvad.DOMAIN, Mullvad.SETUP_PATH)
+        self._config_url = urljoin(Mullvad.DOMAIN, Mullvad.CONFIG_PATH)
         self._error_count = 0
 
     def create_account(self, setup_page=None):
@@ -94,7 +98,16 @@ class Mullvad(object):
         Mullvad._validate_login(login_response.content)
 
     def _download_config(self):
-        print('Downloading config... NOT YET IMPLEMENTED')
+        print('Downloading config...')
+
+        downloaded_config = self._session.get(self._config_url, stream=True)
+        mullvad_config = path.join(tempfile.mkdtemp(), 'mullvadconfig.zip')
+
+        with open(mullvad_config, 'wb') as zip_file:
+            for chunk in downloaded_config.iter_content():
+                zip_file.write(chunk)
+
+        return mullvad_config
 
     @staticmethod
     def _get_create_form(page_content):
