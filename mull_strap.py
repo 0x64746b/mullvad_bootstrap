@@ -13,11 +13,11 @@ import collections
 from os import path
 import sys
 import tempfile
-from urlparse import urljoin
+import urlparse
 
-from bs4 import BeautifulSoup
-from requests import Session
-from sh import display
+import bs4
+import requests
+import sh
 
 
 Captcha = collections.namedtuple('Captcha', ['id', 'code'])
@@ -40,9 +40,15 @@ class WebClient(object):
 
     def __init__(self):
 
-        self._session = Session()
-        self._setup_url = urljoin(WebClient.DOMAIN, WebClient.SETUP_PATH)
-        self._config_url = urljoin(WebClient.DOMAIN, WebClient.CONFIG_PATH)
+        self._session = requests.Session()
+        self._setup_url = urlparse.urljoin(
+            WebClient.DOMAIN,
+            WebClient.SETUP_PATH
+        )
+        self._config_url = urlparse.urljoin(
+            WebClient.DOMAIN,
+            WebClient.CONFIG_PATH
+        )
         self._error_count = 0
 
     def create_account(self, setup_page=None):
@@ -81,7 +87,7 @@ class WebClient(object):
         )['src']
 
         captcha_image = self._session.get(
-            urljoin(WebClient.DOMAIN, captcha_path),
+            urlparse.urljoin(WebClient.DOMAIN, captcha_path),
             stream=True
         )
 
@@ -112,12 +118,12 @@ class WebClient(object):
 
     @staticmethod
     def _get_create_form(page_content):
-        html = BeautifulSoup(page_content)
+        html = bs4.BeautifulSoup(page_content)
         return html.find('form', {'id': 'create_account'})
 
     @staticmethod
     def _display_captcha(image):
-        viewer = display(_in=image, _bg=True)
+        viewer = sh.display(_in=image, _bg=True)
         code = raw_input('Enter captcha: ')
         viewer.process.kill()
 
