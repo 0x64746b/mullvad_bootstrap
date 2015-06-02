@@ -108,10 +108,11 @@ class WebClient(object):
         print('Downloading config...')
 
         downloaded_config = self._session.get(self._config_url, stream=True)
-        mullvad_config = path.join(tempfile.mkdtemp(), 'mullvadconfig.zip')
+        downloaded_config.raise_for_status()
 
+        mullvad_config = path.join(tempfile.mkdtemp(), 'mullvadconfig.zip')
         with open(mullvad_config, 'wb') as zip_file:
-            for chunk in downloaded_config.iter_content():
+            for chunk in downloaded_config:
                 zip_file.write(chunk)
 
         return mullvad_config
