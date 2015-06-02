@@ -9,7 +9,7 @@ from __future__ import (
 )
 
 
-from collections import namedtuple
+import collections
 from os import path
 import sys
 import tempfile
@@ -18,6 +18,9 @@ from urlparse import urljoin
 from bs4 import BeautifulSoup
 from requests import Session
 from sh import display
+
+
+Captcha = collections.namedtuple('Captcha', ['id', 'code'])
 
 
 class LoginError(Exception):
@@ -29,19 +32,17 @@ class LoginError(Exception):
         self.response = response
 
 
-class Mullvad(object):
+class WebClient(object):
 
     DOMAIN = 'https://mullvad.net'
     SETUP_PATH = '/en/setup/openvpn/'
     CONFIG_PATH = '/en/config/?server=se'
 
-    Captcha = namedtuple('Captcha', ['id', 'code'])
-
     def __init__(self):
 
         self._session = Session()
-        self._setup_url = urljoin(Mullvad.DOMAIN, Mullvad.SETUP_PATH)
-        self._config_url = urljoin(Mullvad.DOMAIN, Mullvad.CONFIG_PATH)
+        self._setup_url = urljoin(WebClient.DOMAIN, WebClient.SETUP_PATH)
+        self._config_url = urljoin(WebClient.DOMAIN, WebClient.CONFIG_PATH)
         self._error_count = 0
 
     def create_account(self, setup_page=None):
@@ -54,7 +55,7 @@ class Mullvad(object):
         try:
             self._login(captcha)
         except LoginError as exception:
-            Mullvad._log_errors(exception)
+            WebClient._log_errors(exception)
             self._error_count += 1
             if self._error_count < 3:
                 self.create_account(exception.response)
@@ -65,11 +66,11 @@ class Mullvad(object):
 
     def _solve_captcha(self, setup_page):
         captcha_id, captcha_image = self._fetch_captcha(setup_page)
-        captcha_code = Mullvad._display_captcha(captcha_image)
-        return Mullvad.Captcha(captcha_id, captcha_code)
+        captcha_code = WebClient._display_captcha(captcha_image)
+        return Captcha(captcha_id, captcha_code)
 
     def _fetch_captcha(self, setup_page):
-        create_form = Mullvad._get_create_form(setup_page)
+        create_form = WebClient._get_create_form(setup_page)
         captcha_id = create_form.find(
             'input',
             {'id': 'id_captcha_0'}
@@ -80,7 +81,7 @@ class Mullvad(object):
         )['src']
 
         captcha_image = self._session.get(
-            urljoin(Mullvad.DOMAIN, captcha_path),
+            urljoin(WebClient.DOMAIN, captcha_path),
             stream=True
         )
 
@@ -95,7 +96,7 @@ class Mullvad(object):
                 'create_account': 'create',
             }
         )
-        Mullvad._validate_login(login_response.content)
+        WebClient._validate_login(login_response.content)
 
     def _download_config(self):
         print('Downloading config...')
@@ -124,7 +125,7 @@ class Mullvad(object):
 
     @staticmethod
     def _validate_login(setup_page):
-        create_form = Mullvad._get_create_form(setup_page)
+        create_form = WebClient._get_create_form(setup_page)
         if create_form is not None:
             errors = create_form.find(
                 'ul',
@@ -145,7 +146,7 @@ class Mullvad(object):
 
 
 if __name__ == '__main__':
-    mullvad = Mullvad()
+    mullvad = WebClient()
     try:
         config = mullvad.create_account()
     except LoginError as exception:
