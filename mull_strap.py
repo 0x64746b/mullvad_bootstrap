@@ -64,12 +64,17 @@ class WebClient(object):
         except LoginError as exception:
             WebClient._log_errors(exception)
             self._retry(self.create_account, exception.response)
+        except requests.exceptions.RequestException as error:
+            WebClient._log_errors(error)
+            raise
 
         try:
-            return self._download_config()
+            config_file = self._download_config()
         except requests.exceptions.RequestException as error:
-            WebClient._log_error(error)
-            raise error
+            WebClient._log_errors(error)
+            raise
+
+        return config_file
 
     def _solve_captcha(self, setup_page):
         captcha_id, captcha_image = self._fetch_captcha(setup_page)
@@ -156,13 +161,9 @@ class WebClient(object):
     @staticmethod
     def _log_errors(exception):
         print(exception.message)
-        for error in exception.errors:
-            print(' - {}'.format(error))
-
-    @staticmethod
-    def _log_error(exception):
-        exception.errors = []
-        WebClient._log_errors(exception)
+        if hasattr(exception, 'errors'):
+            for error in exception.errors:
+                print(' - {}'.format(error))
 
 
 class FileManager(object):
