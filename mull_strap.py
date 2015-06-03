@@ -68,8 +68,12 @@ class WebClient(object):
                 self.create_account(exception.response)
             else:
                 raise exception
-        else:
+
+        try:
             return self._download_config()
+        except requests.exceptions.RequestException as error:
+            WebClient._log_error(error)
+            raise error
 
     def _solve_captcha(self, setup_page):
         captcha_id, captcha_image = self._fetch_captcha(setup_page)
@@ -151,6 +155,11 @@ class WebClient(object):
         print(exception.message)
         for error in exception.errors:
             print(' - {}'.format(error))
+
+    @staticmethod
+    def _log_error(exception):
+        exception.errors = []
+        WebClient._log_errors(exception)
 
 
 class FileManager(object):
