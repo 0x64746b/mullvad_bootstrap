@@ -169,15 +169,15 @@ class WebClient(object):
 class FileManager(object):
 
     @staticmethod
-    def unzip(zip_file):
-        print('Unzipping config file', zip_file)
+    def unzip(file_name):
+        print('Unzipping file', file_name)
 
-        tmp_dir = path.dirname(zip_file)
-        zipped_file = zipfile.ZipFile(zip_file)
-        zipped_file.extractall(tmp_dir)
-        output_dir = path.dirname(zipped_file.namelist()[0])
+        dest_dir = path.dirname(file_name)
+        zip_file = zipfile.ZipFile(file_name)
+        zip_file.extractall(dest_dir)
+        zip_root = path.dirname(zip_file.namelist()[0])
 
-        return path.join(tmp_dir, output_dir)
+        return path.join(dest_dir, zip_root)
 
 
 if __name__ == '__main__':
