@@ -63,11 +63,7 @@ class WebClient(object):
             self._login(captcha)
         except LoginError as exception:
             WebClient._log_errors(exception)
-            self._error_count += 1
-            if self._error_count < 3:
-                self.create_account(exception.response)
-            else:
-                raise exception
+            self._retry(self.create_account, exception.response)
 
         try:
             return self._download_config()
@@ -121,6 +117,13 @@ class WebClient(object):
                 zip_file.write(chunk)
 
         return mullvad_config
+
+    def _retry(self, method, *args):
+        self._error_count += 1
+        if self._error_count < 3:
+            method(*args)
+        else:
+            raise
 
     @staticmethod
     def _get_create_form(page_content):
@@ -183,7 +186,7 @@ if __name__ == '__main__':
     mullvad = WebClient()
     try:
         config_file = mullvad.create_account()
-    except LoginError as exception:
+    except Exception:
         sys.exit('Ultimately failed to create account')
     else:
         config_dir = FileManager.unzip(config_file)
