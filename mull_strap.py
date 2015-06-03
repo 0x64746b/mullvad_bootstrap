@@ -63,7 +63,7 @@ class WebClient(object):
             self._login(captcha)
         except LoginError as exception:
             WebClient._log_errors(exception)
-            self._retry(self.create_account, exception.response)
+            return self._retry(self.create_account, exception.response)
         except requests.exceptions.RequestException as error:
             WebClient._log_errors(error)
             raise
@@ -126,7 +126,7 @@ class WebClient(object):
     def _retry(self, method, *args):
         self._error_count += 1
         if self._error_count < 3:
-            method(*args)
+            return method(*args)
         else:
             raise
 
