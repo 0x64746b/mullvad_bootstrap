@@ -11,10 +11,10 @@ from __future__ import (
 
 import collections
 from os import path
-import re
 import sys
 import tempfile
 import urlparse
+import zipfile
 
 import bs4
 import requests
@@ -173,12 +173,9 @@ class FileManager(object):
         print('Unzipping config file', zip_file)
 
         tmp_dir = path.dirname(zip_file)
-        process = sh.unzip(zip_file, '-d', tmp_dir)
-        output_dir = re.search(
-            '^ extracting: {}/(\d+)/.+  $'.format(tmp_dir),
-            process.stdout,
-            re.MULTILINE
-        ).group(1)
+        zipped_file = zipfile.ZipFile(zip_file)
+        zipped_file.extractall(tmp_dir)
+        output_dir = path.dirname(zipped_file.namelist()[0])
 
         return path.join(tmp_dir, output_dir)
 
