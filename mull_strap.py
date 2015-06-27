@@ -14,6 +14,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import urlparse
 import zipfile
 
@@ -194,11 +195,20 @@ class FileManager(object):
                 shutil.copy(node_name, dst_dir)
 
 
-class OpenVPN(object):
+class NetworkManager(object):
 
     @staticmethod
-    def restart():
+    def restart_openvpn():
+        print('Restarting OpenVPN...')
+
         sh.service('openvpn', 'restart')
+
+        # wait for configuration to be applied
+        time.sleep(6)
+
+    @staticmethod
+    def show_routes():
+        print(sh.route('-n'))
 
 
 if __name__ == '__main__':
@@ -211,4 +221,5 @@ if __name__ == '__main__':
         config_dir = FileManager.unzip(config_file)
         FileManager.move_files(config_dir, OPENVPN_CONFIG_DIR)
 
-        OpenVPN.restart()
+        NetworkManager.restart_openvpn()
+        NetworkManager.show_routes()
