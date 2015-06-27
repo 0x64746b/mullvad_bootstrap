@@ -194,6 +194,15 @@ class FileManager(object):
                 shutil.copy(node_name, dst_dir)
 
 
+class OpenVPN(object):
+
+    def __init__(self):
+        self._command = sh.service.bake('openvpn')
+
+    def restart(self):
+        self._command('restart')
+
+
 if __name__ == '__main__':
     mullvad = WebClient()
     try:
@@ -203,3 +212,5 @@ if __name__ == '__main__':
     else:
         config_dir = FileManager.unzip(config_file)
         FileManager.move_files(config_dir, OPENVPN_CONFIG_DIR)
+
+        OpenVPN().restart()
