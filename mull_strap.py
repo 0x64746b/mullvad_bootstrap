@@ -11,6 +11,7 @@ from __future__ import (
 
 import collections
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -23,9 +24,6 @@ import requests
 import sh
 
 
-OPENVPN_CONFIG_DIR = '/etc/openvpn'
-
-
 Captcha = collections.namedtuple('Captcha', ['id', 'code'])
 
 
@@ -36,6 +34,11 @@ class LoginError(Exception):
         self.message = message
         self.errors = errors
         self.response = response
+
+
+class Timeout(Exception):
+
+    pass
 
 
 class WebClient(object):
@@ -197,6 +200,9 @@ class FileManager(object):
 
 class NetworkManager(object):
 
+    OPENVPN_CONFIG_DIR = '/etc/openvpn'
+    TUNNEL_DEVICE = 'tun0'
+
     @staticmethod
     def restart_openvpn():
         print('Restarting OpenVPN...')
@@ -204,11 +210,30 @@ class NetworkManager(object):
         sh.service('openvpn', 'restart')
 
         # wait for configuration to be applied
-        time.sleep(6)
+        NetworkManager._wait_for_routes()
 
     @staticmethod
-    def show_routes():
-        print(sh.route('-n'))
+    def _wait_for_routes():
+        sys.stdout.write('Waiting for routes to be established')
+        sys.stdout.flush()
+
+        for attempt in range(10):
+            routes = sh.route('-n').stdout
+            if re.search(
+                'Iface\n0\.0\.0\.0.+{}'.format(NetworkManager.TUNNEL_DEVICE),
+                routes
+            ):
+                print(
+                    '\nDefault route through tunnel has been established:\n',
+                    routes
+                )
+                return
+            else:
+                sys.stdout.write('.')
+                sys.stdout.flush()
+                time.sleep(1)
+
+        raise Timeout('No default route through tunnel has been established')
 
 
 if __name__ == '__main__':
@@ -219,7 +244,6 @@ if __name__ == '__main__':
         sys.exit('Ultimately failed to create account')
     else:
         config_dir = FileManager.unzip(config_file)
-        FileManager.move_files(config_dir, OPENVPN_CONFIG_DIR)
+        FileManager.move_files(config_dir, NetworkManager.OPENVPN_CONFIG_DIR)
 
         NetworkManager.restart_openvpn()
-        NetworkManager.show_routes()
