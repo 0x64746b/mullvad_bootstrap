@@ -246,6 +246,24 @@ class NetworkManager(object):
         else:
             print(packets)
 
+    @staticmethod
+    def check_external_ip():
+        print('Checking external IP...')
+
+        infos = requests.get('http://www.infosniper.net').content
+        html = bs4.BeautifulSoup(infos)
+
+        rows = html.table.find_all('tr')
+
+        ip = rows[1].td.contents[0].strip()
+        isp = rows[3].td.contents[0].strip()
+        hostname = rows[5].find_all('td')[0].contents[0].strip()
+        country = rows[5].find_all('td')[2].contents[0].strip()
+        continent = rows[7].find_all('td')[2].contents[0].strip()
+
+        print(' - ISP: {} in {}/{}'.format(isp, continent, country))
+        print(' - IP: {} ({})'.format(ip, hostname))
+
 
 if __name__ == '__main__':
     mullvad = WebClient()
@@ -266,3 +284,5 @@ if __name__ == '__main__':
         NetworkManager.ping()
     except Exception as error:
         sys.exit('Failed to verify connectivity: {}'.format(error.message))
+    else:
+        NetworkManager.check_external_ip()
