@@ -204,8 +204,8 @@ class NetworkManager(object):
     TUNNEL_DEVICE = 'tun0'
 
     @staticmethod
-    def restart_openvpn():
-        print('Restarting OpenVPN...')
+    def start_vpn_service():
+        print('Starting VPN service...')
 
         sh.service('openvpn', 'restart')
 
@@ -240,10 +240,13 @@ if __name__ == '__main__':
     mullvad = WebClient()
     try:
         config_file = mullvad.create_account()
-    except Exception:
-        sys.exit('Ultimately failed to create account')
+    except Exception as error:
+        sys.exit('Failed to create account: {}'.format(error.message))
     else:
         config_dir = FileManager.unzip(config_file)
         FileManager.move_files(config_dir, NetworkManager.OPENVPN_CONFIG_DIR)
 
-        NetworkManager.restart_openvpn()
+    try:
+        NetworkManager.start_vpn_service()
+    except Exception as error:
+        sys.exit('Failed to connect to VPN: {}'.format(error.message))
