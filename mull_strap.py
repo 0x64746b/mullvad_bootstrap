@@ -253,16 +253,37 @@ class NetworkManager(object):
         infos = requests.get('http://www.infosniper.net').content
         html = bs4.BeautifulSoup(infos)
 
-        rows = html.table.find_all('tr')
+        table = InfoSniperTable(html.table)
 
-        ip = rows[1].td.contents[0].strip()
-        isp = rows[3].td.contents[0].strip()
-        hostname = rows[5].find_all('td')[0].contents[0].strip()
-        country = rows[5].find_all('td')[2].contents[0].strip()
-        continent = rows[7].find_all('td')[2].contents[0].strip()
+        print(
+            ' - ISP: {} in {}/{}'.format(table[1][0], table[3][1], table[2][1])
+        )
+        print(' - IP: {} ({})'.format(table[0][0], table[2][0]))
 
-        print(' - ISP: {} in {}/{}'.format(isp, continent, country))
-        print(' - IP: {} ({})'.format(ip, hostname))
+
+class InfoSniperTable(object):
+
+    class Row(object):
+
+        def __init__(self, row):
+            self._cells = [cell.text.strip() for cell in
+                           row.find_all('td')[::2]]
+
+        def __getitem__(self, index):
+            return self._cells[index]
+
+        def __repr__(self):
+            return str(self._cells)
+
+    def __init__(self, table):
+        self._rows = [InfoSniperTable.Row(tr) for tr in
+                      table.find_all('tr')[1::2]]
+
+    def __getitem__(self, index):
+        return self._rows[index]
+
+    def __repr__(self):
+        return '\n'.join(map(str, self._rows))
 
 
 if __name__ == '__main__':
