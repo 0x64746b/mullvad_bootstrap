@@ -10,7 +10,8 @@ from __future__ import (
 
 
 import collections
-from os import path
+import os
+import shutil
 import sys
 import tempfile
 import urlparse
@@ -19,6 +20,9 @@ import zipfile
 import bs4
 import requests
 import sh
+
+
+OPENVPN_CONFIG_DIR = '/etc/openvpn'
 
 
 Captcha = collections.namedtuple('Captcha', ['id', 'code'])
@@ -116,7 +120,8 @@ class WebClient(object):
         downloaded_config = self._session.get(self._config_url, stream=True)
         downloaded_config.raise_for_status()
 
-        mullvad_config = path.join(tempfile.mkdtemp(), 'mullvadconfig.zip')
+        mullvad_config = os.path.join(tempfile.mkdtemp(), 'mullvadconfig.zip')
+
         with open(mullvad_config, 'wb') as zip_file:
             for chunk in downloaded_config:
                 zip_file.write(chunk)
@@ -172,12 +177,21 @@ class FileManager(object):
     def unzip(file_name):
         print('Unzipping file', file_name)
 
-        dest_dir = path.dirname(file_name)
+        dest_dir = os.path.dirname(file_name)
         zip_file = zipfile.ZipFile(file_name)
         zip_file.extractall(dest_dir)
-        zip_root = path.dirname(zip_file.namelist()[0])
+        zip_root = os.path.dirname(zip_file.namelist()[0])
 
-        return path.join(dest_dir, zip_root)
+        return os.path.join(dest_dir, zip_root)
+
+    @staticmethod
+    def move_files(src_dir, dst_dir):
+        print('Moving files from \'{}\' to \'{}\''.format(src_dir, dst_dir))
+
+        for node in os.listdir(src_dir):
+            node_name = os.path.join(src_dir, node)
+            if os.path.isfile(node_name):
+                shutil.copy(node_name, dst_dir)
 
 
 if __name__ == '__main__':
@@ -188,4 +202,4 @@ if __name__ == '__main__':
         sys.exit('Ultimately failed to create account')
     else:
         config_dir = FileManager.unzip(config_file)
-        print('Extracted config files to', config_dir)
+        FileManager.move_files(config_dir, OPENVPN_CONFIG_DIR)
