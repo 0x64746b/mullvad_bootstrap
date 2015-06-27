@@ -196,8 +196,9 @@ class FileManager(object):
 
 class OpenVPN(object):
 
-    def __new__(self):
-        return sh.service.bake('openvpn')
+    @staticmethod
+    def restart():
+        sh.service('openvpn', 'restart')
 
 
 if __name__ == '__main__':
@@ -210,5 +211,4 @@ if __name__ == '__main__':
         config_dir = FileManager.unzip(config_file)
         FileManager.move_files(config_dir, OPENVPN_CONFIG_DIR)
 
-        openvpn = OpenVPN()
-        openvpn('restart')
+        OpenVPN.restart()
