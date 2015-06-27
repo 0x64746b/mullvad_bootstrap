@@ -235,6 +235,17 @@ class NetworkManager(object):
 
         raise NetworkError('No default route through tunnel was set')
 
+    @staticmethod
+    def ping(ip='4.2.2.2'):
+        print('Pinging {}...'.format(ip))
+
+        try:
+            packets = sh.ping('-c4', ip).stdout
+        except sh.ErrorReturnCode:
+            raise NetworkError('Could not reach {}'.format(ip))
+        else:
+            print(packets)
+
 
 if __name__ == '__main__':
     mullvad = WebClient()
@@ -250,3 +261,8 @@ if __name__ == '__main__':
         NetworkManager.start_vpn_service()
     except Exception as error:
         sys.exit('Failed to connect to VPN: {}'.format(error.message))
+
+    try:
+        NetworkManager.ping()
+    except Exception as error:
+        sys.exit('Failed to verify connectivity: {}'.format(error.message))
