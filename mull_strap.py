@@ -27,16 +27,16 @@ import sh
 Captcha = collections.namedtuple('Captcha', ['id', 'code'])
 
 
-class LoginError(Exception):
+class AccountError(Exception):
 
     def __init__(self, message, errors, response, *args):
-        super(LoginError, self).__init__(message, errors, response, *args)
+        super(AccountError, self).__init__(message, errors, response, *args)
         self.message = message
         self.errors = errors
         self.response = response
 
 
-class Timeout(Exception):
+class NetworkError(Exception):
 
     pass
 
@@ -69,7 +69,7 @@ class WebClient(object):
 
         try:
             self._login(captcha)
-        except LoginError as exception:
+        except AccountError as exception:
             WebClient._log_errors(exception)
             return self._retry(self.create_account, exception.response)
         except requests.exceptions.RequestException as error:
@@ -161,7 +161,7 @@ class WebClient(object):
                 {'class': 'errorlist'}
             ).find_all('li')
 
-            raise LoginError(
+            raise AccountError(
                 'Failed to create account',
                 [error.text for error in errors],
                 setup_page
@@ -233,7 +233,7 @@ class NetworkManager(object):
                 sys.stdout.flush()
                 time.sleep(1)
 
-        raise Timeout('No default route through tunnel has been established')
+        raise NetworkError('No default route through tunnel was set')
 
 
 if __name__ == '__main__':
