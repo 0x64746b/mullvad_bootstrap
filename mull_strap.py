@@ -235,7 +235,6 @@ class NetworkManager(object):
 
     @staticmethod
     def remove_unencrypted_default_routes():
-        print('Removing unencrypted default routes...')
         route = sh.route.bake('-n')
 
         interfaces = re.findall(
@@ -248,6 +247,7 @@ class NetworkManager(object):
             lambda device: device != NetworkManager.TUNNEL_DEVICE,
             interfaces
         ):
+            print('Removing default route from interface {}'.format(device))
             route('del', 'default', 'dev', device)
 
         print(route().stdout)
