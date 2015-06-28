@@ -256,18 +256,31 @@ class NetworkManager(object):
         table = InfoSniperTable(html.table)
 
         print(
-            ' - ISP: {} in {}/{}'.format(table[1][0], table[3][1], table[2][1])
+            ' - ISP: {} in {}/{}'.format(
+                table[1]['Provider'],
+                table[3]['Continent'],
+                table[2]['Country']
+            )
         )
-        print(' - IP: {} ({})'.format(table[0][0], table[2][0]))
+        print(
+            ' - IP: {} ({})'.format(
+                table[0]['IP Address'],
+                table[2]['Hostname']
+            )
+        )
 
 
 class InfoSniperTable(object):
 
     class Row(object):
 
-        def __init__(self, row):
-            self._cells = [cell.text.strip() for cell in
-                           row.find_all('td')[::2]]
+        def __init__(self, header_row, value_row):
+            headers = [cell.text for cell in header_row.find_all('td')[::2]]
+            values = [cell.text.strip() for cell in
+                      value_row.find_all('td')[::2]]
+
+            self._cells = {header: value for header, value in
+                           zip(headers, values)}
 
         def __getitem__(self, index):
             return self._cells[index]
@@ -276,8 +289,10 @@ class InfoSniperTable(object):
             return str(self._cells)
 
     def __init__(self, table):
-        self._rows = [InfoSniperTable.Row(tr) for tr in
-                      table.find_all('tr')[1::2]]
+        rows = table.find_all('tr')
+        header_rows, value_rows = rows[::2], rows[1::2]
+        self._rows = [InfoSniperTable.Row(*row_pair) for row_pair in
+                      zip(header_rows, value_rows)]
 
     def __getitem__(self, index):
         return self._rows[index]
