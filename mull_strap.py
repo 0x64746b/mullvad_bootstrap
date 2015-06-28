@@ -200,7 +200,7 @@ class FileManager(object):
 
 class NetworkManager(object):
 
-    OPENVPN_CONFIG_DIR = '/etc/openvpn'
+    OPENVPN_CONFIG_DIR = '/etc/openvpn/'
     TUNNEL_DEVICE = 'tun0'
 
     @staticmethod
@@ -217,16 +217,15 @@ class NetworkManager(object):
         sys.stdout.write('Waiting for routes to be established')
         sys.stdout.flush()
 
+        route = sh.route.bake('-n')
         for attempt in range(10):
-            routes = sh.route('-n').stdout
+            routes = route().stdout
             if re.search(
                 'Iface\n0\.0\.0\.0.+{}'.format(NetworkManager.TUNNEL_DEVICE),
                 routes
             ):
-                print(
-                    '\nDefault route through tunnel has been established:\n',
-                    routes
-                )
+                sys.stdout.write('\n')
+                sys.stdout.flush()
                 return
             else:
                 sys.stdout.write('.')
@@ -234,6 +233,25 @@ class NetworkManager(object):
                 time.sleep(1)
 
         raise NetworkError('No default route through tunnel was set')
+
+    @staticmethod
+    def remove_unencrypted_default_routes():
+        print('Removing unencrypted default routes...')
+        route = sh.route.bake('-n')
+
+        interfaces = re.findall(
+            '^0\.0\.0\.0 .+ (\w+)$',
+            route().stdout,
+            re.MULTILINE
+        )
+
+        for device in filter(
+            lambda device: device != NetworkManager.TUNNEL_DEVICE,
+            interfaces
+        ):
+            route('delete', 'default', 'device', device)
+
+        print(route().stdout)
 
     @staticmethod
     def ping(ip='4.2.2.2'):
@@ -300,6 +318,8 @@ if __name__ == '__main__':
         NetworkManager.start_vpn_service()
     except Exception as error:
         sys.exit('Failed to connect to VPN: {}'.format(error.message))
+    else:
+        NetworkManager.remove_unencrypted_default_routes()
 
     try:
         NetworkManager.ping()
