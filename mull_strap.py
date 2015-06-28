@@ -219,10 +219,9 @@ class NetworkManager(object):
 
         route = sh.route.bake('-n')
         for attempt in range(10):
-            routes = route().stdout
             if re.search(
                 'Iface\n0\.0\.0\.0.+{}'.format(NetworkManager.TUNNEL_DEVICE),
-                routes
+                route().stdout
             ):
                 sys.stdout.write('\n')
                 sys.stdout.flush()
