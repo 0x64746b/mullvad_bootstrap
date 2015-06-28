@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
+
+
+from mullvad import files, network, webapp
+
+
+def bootstrap():
+    mullvad = webapp.Client()
+    try:
+        config_file = mullvad.create_account()
+    except Exception as error:
+        sys.exit('Failed to create account: {}'.format(error.message))
+    else:
+        config_dir = files.unzip(config_file)
+        files.move(config_dir, network.OPENVPN_CONFIG_DIR)
+
+    try:
+        network.start_vpn_service()
+    except Exception as error:
+        sys.exit('Failed to connect to VPN: {}'.format(error.message))
+    else:
+        network.remove_unencrypted_default_routes()
+
+    try:
+        network.ping()
+    except Exception as error:
+        sys.exit('Failed to verify connectivity: {}'.format(error.message))
+    else:
+        network.check_external_ip()
+
+    print('Successfully bootstrapped a Mullvad VPN account')
+
+
+if __name__ == '__main__':
+    bootstrap()
