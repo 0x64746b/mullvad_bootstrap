@@ -257,48 +257,33 @@ class NetworkManager(object):
 
         print(
             ' - ISP: {} in {}/{}'.format(
-                table[1]['Provider'],
-                table[3]['Continent'],
-                table[2]['Country']
+                table['Provider'],
+                table['Continent'],
+                table['Country'],
             )
         )
         print(
             ' - IP: {} ({})'.format(
-                table[0]['IP Address'],
-                table[2]['Hostname']
+                table['IP Address'],
+                table['Hostname'],
             )
         )
 
 
-class InfoSniperTable(object):
-
-    class Row(object):
-
-        def __init__(self, header_row, value_row):
-            headers = [cell.text for cell in header_row.find_all('td')[::2]]
-            values = [cell.text.strip() for cell in
-                      value_row.find_all('td')[::2]]
-
-            self._cells = {header: value for header, value in
-                           zip(headers, values)}
-
-        def __getitem__(self, index):
-            return self._cells[index]
-
-        def __repr__(self):
-            return str(self._cells)
+class InfoSniperTable(dict):
 
     def __init__(self, table):
         rows = table.find_all('tr')
         header_rows, value_rows = rows[::2], rows[1::2]
-        self._rows = [InfoSniperTable.Row(*row_pair) for row_pair in
-                      zip(header_rows, value_rows)]
 
-    def __getitem__(self, index):
-        return self._rows[index]
+        for row_pair in zip(header_rows, value_rows):
+            self.update(self._parse_row(*row_pair))
 
-    def __repr__(self):
-        return '\n'.join(map(str, self._rows))
+    def _parse_row(self, header_row, value_row):
+        headers = [cell.text for cell in header_row.find_all('td')[::2]]
+        values = [cell.text.strip() for cell in value_row.find_all('td')[::2]]
+
+        return {header: value for header, value in zip(headers, values)}
 
 
 if __name__ == '__main__':
