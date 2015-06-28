@@ -248,7 +248,7 @@ class NetworkManager(object):
             lambda device: device != NetworkManager.TUNNEL_DEVICE,
             interfaces
         ):
-            route('delete', 'default', 'device', device)
+            route('del', 'default', 'dev', device)
 
         print(route().stdout)
 
