@@ -15,6 +15,7 @@ from __future__ import (
 
 import argparse
 import os
+import signal
 import sys
 
 from mullvad import files, network, webapp
@@ -26,6 +27,11 @@ def _check_root():
             'This script has to be run as root in order to configure the VPN'
             ' service. Exiting.'
         )
+
+
+def _install_interrupt_handler():
+    """Suppress stack trace on Ctrl-C."""
+    signal.signal(signal.SIGINT, lambda s, f: sys.exit('Aborting.'))
 
 
 def _remind_of_awesomeness():
@@ -81,6 +87,8 @@ if __name__ == '__main__':
     )
 
     cli_args = main_command.parse_args()
+
+    _install_interrupt_handler()
 
     _remind_of_awesomeness()
 
