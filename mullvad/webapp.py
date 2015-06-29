@@ -58,7 +58,7 @@ class Client(object):
         captcha = self._solve_captcha(setup_page)
 
         try:
-            self._login(captcha)
+            account_number = self._login(captcha)
         except AccountError as exception:
             Client._log_errors(exception)
             return self._retry(
@@ -76,7 +76,7 @@ class Client(object):
             Client._log_errors(error)
             raise
 
-        return config_file
+        return account_number, config_file
 
     def _solve_captcha(self, setup_page):
         captcha_id, captcha_image = self._fetch_captcha(setup_page)
@@ -111,6 +111,8 @@ class Client(object):
             }
         )
         Client._validate_login(login_response.content)
+
+        return Client._extract_account_number(login_response.content)
 
     def _download_config(self, exit_country):
         print('Downloading config...')
@@ -163,6 +165,12 @@ class Client(object):
                 [error.text for error in errors],
                 setup_page
             )
+
+    @staticmethod
+    def _extract_account_number(setup_page):
+        html = bs4.BeautifulSoup(setup_page)
+        label = html(text='Account number:')[0]
+        return label.parent.next_sibling.strip()
 
     @staticmethod
     def _log_errors(exception):

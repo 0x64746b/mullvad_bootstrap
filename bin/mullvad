@@ -49,7 +49,7 @@ def bootstrap(args):
 
     mullvad = webapp.Client()
     try:
-        config_file = mullvad.create_account(args.exit_country)
+        account_number, config_file = mullvad.create_account(args.exit_country)
     except Exception as error:
         sys.exit('Failed to create account: {}'.format(error.message))
     else:
@@ -70,7 +70,10 @@ def bootstrap(args):
     else:
         network.check_external_ip()
 
-    print('Successfully bootstrapped a Mullvad VPN account')
+    print(
+        '\nSuccessfully bootstrapped a VPN connection from new Mullvad account'
+        ' {}'.format(account_number)
+    )
 
 
 if __name__ == '__main__':
