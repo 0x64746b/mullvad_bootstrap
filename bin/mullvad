@@ -50,6 +50,14 @@ if __name__ == '__main__':
     sub_commands = main_command.add_subparsers()
 
     bootstrap_command = sub_commands.add_parser('bootstrap')
+    bootstrap_command.add_argument(
+        '-e',
+        '--exit-country',
+        metavar='TLD',
+        default='se',
+        choices=['ca', 'de', 'nl','se', 'us'],
+        help='select an exit country [default: %(default)s]',
+    )
 
     main_command.parse_args()
 
