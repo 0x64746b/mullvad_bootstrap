@@ -50,7 +50,7 @@ class Client(object):
         )
         self._error_count = 0
 
-    def create_account(self, exit_country, setup_page=None):
+    def create_account(self, setup_page=None):
 
         if not setup_page:
             setup_page = self._session.get(self._setup_url).content
@@ -63,20 +63,13 @@ class Client(object):
             Client._log_errors(exception)
             return self._retry(
                 self.create_account,
-                exit_country,
                 exception.response
             )
         except requests.exceptions.RequestException as error:
             Client._log_errors(error)
             raise
 
-        try:
-            config_file = self._download_config(exit_country)
-        except requests.exceptions.RequestException as error:
-            Client._log_errors(error)
-            raise
-
-        return account_number, config_file
+        return account_number
 
     def _solve_captcha(self, setup_page):
         captcha_id, captcha_image = self._fetch_captcha(setup_page)
@@ -114,7 +107,7 @@ class Client(object):
 
         return Client._extract_account_number(login_response.content)
 
-    def _download_config(self, exit_country):
+    def download_config(self, exit_country):
         print('Downloading config...')
 
         downloaded_config = self._session.get(

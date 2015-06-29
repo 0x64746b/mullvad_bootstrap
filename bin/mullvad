@@ -48,10 +48,16 @@ def bootstrap(args):
     _check_root()
 
     mullvad = webapp.Client()
+
     try:
-        account_number, config_file = mullvad.create_account(args.exit_country)
+        account_number = mullvad.create_account()
     except Exception as error:
         sys.exit('Failed to create account: {}'.format(error.message))
+
+    try:
+        config_file = mullvad.download_config(args.exit_country)
+    except Exception as error:
+        sys.exit('Failed to download config: {}'.format(error.message))
     else:
         config_dir = files.unzip(config_file)
         files.move(config_dir, network.OPENVPN_CONFIG_DIR)
