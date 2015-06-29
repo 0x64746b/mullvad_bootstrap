@@ -75,7 +75,10 @@ def bootstrap(args):
 
 if __name__ == '__main__':
     main_command = argparse.ArgumentParser(description=__doc__)
-    sub_commands = main_command.add_subparsers(metavar='sub-command')
+    sub_commands = main_command.add_subparsers(
+        dest='selected_command',
+        metavar='sub-command'
+    )
 
     bootstrap_command = sub_commands.add_parser(
         'bootstrap',
