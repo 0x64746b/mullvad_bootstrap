@@ -18,10 +18,10 @@ import argparse
 from mullvad import files, network, webapp
 
 
-def bootstrap():
+def bootstrap(args):
     mullvad = webapp.Client()
     try:
-        config_file = mullvad.create_account()
+        config_file = mullvad.create_account(args.exit_country)
     except Exception as error:
         sys.exit('Failed to create account: {}'.format(error.message))
     else:
@@ -59,6 +59,6 @@ if __name__ == '__main__':
         help='select an exit country [default: %(default)s]',
     )
 
-    main_command.parse_args()
+    cli_args = main_command.parse_args()
 
-    bootstrap()
+    bootstrap(cli_args)
