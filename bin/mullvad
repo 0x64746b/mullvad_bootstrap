@@ -2,6 +2,9 @@
 # coding: utf-8
 
 
+"""Manage your Mullvad VPN connection."""
+
+
 from __future__ import (
     absolute_import,
     division,
@@ -9,6 +12,8 @@ from __future__ import (
     unicode_literals,
 )
 
+
+import argparse
 
 from mullvad import files, network, webapp
 
@@ -41,4 +46,11 @@ def bootstrap():
 
 
 if __name__ == '__main__':
+    main_command = argparse.ArgumentParser(description=__doc__)
+    sub_commands = main_command.add_subparsers()
+
+    bootstrap_command = sub_commands.add_parser('bootstrap')
+
+    main_command.parse_args()
+
     bootstrap()
