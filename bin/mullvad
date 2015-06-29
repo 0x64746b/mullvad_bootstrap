@@ -44,6 +44,7 @@ def _remind_of_awesomeness():
     )
 
 def bootstrap(args):
+    """Bootstrap a VPN connection from a new Mullvad test account."""
     _check_root()
 
     mullvad = webapp.Client()
@@ -74,9 +75,12 @@ def bootstrap(args):
 
 if __name__ == '__main__':
     main_command = argparse.ArgumentParser(description=__doc__)
-    sub_commands = main_command.add_subparsers()
+    sub_commands = main_command.add_subparsers(metavar='sub-command')
 
-    bootstrap_command = sub_commands.add_parser('bootstrap')
+    bootstrap_command = sub_commands.add_parser(
+        'bootstrap',
+        help=bootstrap.__doc__
+    )
     bootstrap_command.add_argument(
         '-e',
         '--exit-country',
