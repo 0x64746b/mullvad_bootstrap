@@ -35,7 +35,7 @@ class Client(object):
 
     DOMAIN = 'https://mullvad.net'
     SETUP_PATH = '/en/setup/openvpn/'
-    CONFIG_PATH = '/en/config/?server=se'
+    CONFIG_PATH = '/en/config/?server={}'
 
     def __init__(self):
 
@@ -50,7 +50,7 @@ class Client(object):
         )
         self._error_count = 0
 
-    def create_account(self, setup_page=None):
+    def create_account(self, exit_country, setup_page=None):
 
         if not setup_page:
             setup_page = self._session.get(self._setup_url).content
@@ -61,13 +61,17 @@ class Client(object):
             self._login(captcha)
         except AccountError as exception:
             Client._log_errors(exception)
-            return self._retry(self.create_account, exception.response)
+            return self._retry(
+                self.create_account,
+                exit_country,
+                exception.response
+            )
         except requests.exceptions.RequestException as error:
             Client._log_errors(error)
             raise
 
         try:
-            config_file = self._download_config()
+            config_file = self._download_config(exit_country)
         except requests.exceptions.RequestException as error:
             Client._log_errors(error)
             raise
@@ -108,10 +112,13 @@ class Client(object):
         )
         Client._validate_login(login_response.content)
 
-    def _download_config(self):
+    def _download_config(self, exit_country):
         print('Downloading config...')
 
-        downloaded_config = self._session.get(self._config_url, stream=True)
+        downloaded_config = self._session.get(
+            self._config_url.format(exit_country),
+            stream=True
+        )
         downloaded_config.raise_for_status()
 
         mullvad_config = os.path.join(tempfile.mkdtemp(), 'mullvadconfig.zip')
