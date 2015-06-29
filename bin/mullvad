@@ -28,6 +28,15 @@ def _check_root():
         )
 
 
+def _remind_of_awesomeness():
+    print(
+        '\n'
+        '*** Mullvad provides an awesome service!!1'
+        ' Support them by adding a monthly subscription to your account.'
+        ' Help keep the service alive! ***'
+        '\n'
+    )
+
 def bootstrap(args):
     _check_root()
 
@@ -72,5 +81,7 @@ if __name__ == '__main__':
     )
 
     cli_args = main_command.parse_args()
+
+    _remind_of_awesomeness()
 
     bootstrap(cli_args)
