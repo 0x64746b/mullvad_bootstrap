@@ -14,11 +14,23 @@ from __future__ import (
 
 
 import argparse
+import os
+import sys
 
 from mullvad import files, network, webapp
 
 
+def _check_root():
+    if os.geteuid() != 0:
+        sys.exit(
+            'This script has to be run as root in order to configure the VPN'
+            ' service. Exiting.'
+        )
+
+
 def bootstrap(args):
+    _check_root()
+
     mullvad = webapp.Client()
     try:
         config_file = mullvad.create_account(args.exit_country)
