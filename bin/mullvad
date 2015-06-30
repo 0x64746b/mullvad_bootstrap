@@ -16,9 +16,8 @@ from __future__ import (
 import argparse
 import os
 import signal
-import sys
 
-from mullvad import files, network, webapp
+from mullvad import files, network, output, webapp
 
 
 def _parse_command_line_args():
@@ -47,23 +46,23 @@ def _parse_command_line_args():
 
 def _install_interrupt_handler():
     """Suppress stack trace on Ctrl-C."""
-    signal.signal(signal.SIGINT, lambda s, f: sys.exit('Aborting.'))
+    signal.signal(signal.SIGINT, lambda s, f: output.die('Aborting.'))
 
 
 def _remind_of_awesomeness():
-    print(
+    output.notify(
         '\n'
-        '*** Mullvad provides an awesome service!!1'
+        'Mullvad provides an awesome service!!1'
         ' Support them by adding a monthly subscription to your account.'
-        ' Help keep the service alive! ***'
-        '\n'
+        ' Help keep the service alive!'
+        '\n',
     )
 
 
 def _check_root():
     """Check if the script is being run by root."""
     if os.geteuid() != 0:
-        sys.exit(
+        output.die(
             'This script has to be run as root in order to configure the VPN'
             ' service. Exiting.'
         )
@@ -78,12 +77,12 @@ def bootstrap(args):
     try:
         account_number = mullvad.create_account()
     except Exception as error:
-        sys.exit('Failed to create account: {}'.format(error.message))
+        output.die('Failed to create account: {}'.format(error.message))
 
     try:
         config_file = mullvad.download_config(args.exit_country)
     except Exception as error:
-        sys.exit('Failed to download config: {}'.format(error.message))
+        output.die('Failed to download config: {}'.format(error.message))
     else:
         config_dir = files.unzip(config_file)
         files.move(config_dir, network.OPENVPN_CONFIG_DIR)
@@ -91,20 +90,20 @@ def bootstrap(args):
     try:
         network.start_vpn_service()
     except Exception as error:
-        sys.exit('Failed to connect to VPN: {}'.format(error.message))
+        output.die('Failed to connect to VPN: {}'.format(error.message))
     else:
         network.remove_unencrypted_default_routes()
 
     try:
         network.ping()
     except Exception as error:
-        sys.exit('Failed to verify connectivity: {}'.format(error.message))
+        output.die('Failed to verify connectivity: {}'.format(error.message))
     else:
         network.check_external_ip()
 
-    print(
+    output.notify(
         '\nSuccessfully bootstrapped a VPN connection from new Mullvad account'
-        ' {}'.format(account_number)
+        ' {}.'.format(account_number)
     )
 
 
