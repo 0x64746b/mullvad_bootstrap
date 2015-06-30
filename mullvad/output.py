@@ -10,6 +10,7 @@ from __future__ import (
 
 
 import sys
+import time
 
 import termcolor
 
@@ -19,23 +20,11 @@ def notify(text):
 
 
 def itemize(text):
-    start_progress(text)
-    finish_progress()
+    print(_make_item(text))
 
 
-def start_progress(text):
-    sys.stdout.write(termcolor.colored('[*] ' + text, 'green'))
-    sys.stdout.flush()
-
-
-def progress():
-    sys.stdout.write(termcolor.colored('.', 'green'))
-    sys.stdout.flush()
-
-
-def finish_progress():
-    sys.stdout.write('\n')
-    sys.stdout.flush()
+def _make_item(text):
+    return termcolor.colored('[*] ' + text, 'green')
 
 
 def error(text):
@@ -44,3 +33,47 @@ def error(text):
 
 def die(text):
     sys.exit(termcolor.colored(text, 'red', attrs=['bold']))
+
+
+class Attempts(object):
+
+    def __init__(self, text, num_attempts=10, delay=1):
+        self._item = _make_item(text)
+        self._num_attempts = num_attempts
+        self._delay = delay
+
+        self._current_attempt = 0
+        self._successful = False
+
+    @property
+    def successful(self):
+        return self._successful
+
+    @successful.setter
+    def successful(self, value):
+        self._successful = value
+
+    def __enter__(self):
+        sys.stdout.write(self._item)
+        sys.stdout.flush()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+        return False
+
+    def passed(self):
+        sys.stdout.write(termcolor.colored('.', 'green'))
+        sys.stdout.flush()
+        time.sleep(self._delay)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self._current_attempt < self._num_attempts and not self._successful:
+            self._current_attempt += 1
+            return self
+        else:
+            raise StopIteration()

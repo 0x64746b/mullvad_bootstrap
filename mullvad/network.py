@@ -10,7 +10,6 @@ from __future__ import (
 
 
 import re
-import time
 
 import bs4
 import requests
@@ -54,21 +53,20 @@ def start_vpn_service():
 
 
 def _wait_for_routes():
-    output.start_progress('Waiting for routes to be established')
-
     route = sh.route.bake('-n')
-    for attempt in range(10):
-        if re.search(
-            'Iface\n0\.0\.0\.0.+{}'.format(TUNNEL_DEVICE),
-            route().stdout
-        ):
-            output.finish_progress()
-            return
-        else:
-            output.progress()
-            time.sleep(1)
 
-    raise NetworkError('No default route through tunnel was set')
+    with output.Attempts('Waiting for routes to be established') as attempts:
+        for attempt in attempts:
+            if re.search(
+                'Iface\n0\.0\.0\.0.+{}'.format(TUNNEL_DEVICE),
+                route().stdout
+            ):
+                attempt.successful = True
+            else:
+                attempt.passed()
+
+        if not attempts.successful:
+            raise NetworkError('No default route through tunnel was set')
 
 
 def remove_unencrypted_default_routes():
