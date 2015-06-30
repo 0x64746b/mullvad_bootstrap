@@ -102,8 +102,9 @@ def bootstrap(args):
         network.check_external_ip()
 
     output.notify(
-        '\nSuccessfully bootstrapped a VPN connection from new Mullvad account'
-        ' {}.'.format(account_number)
+        '\nBootstrapped a VPN connection from new Mullvad account {}.'.format(
+            account_number
+        )
     )
 
 

@@ -18,6 +18,8 @@ import bs4
 import requests
 import sh
 
+from . import output
+
 
 Captcha = collections.namedtuple('Captcha', ['id', 'code'])
 
@@ -108,7 +110,7 @@ class Client(object):
         return Client._extract_account_number(login_response.content)
 
     def download_config(self, exit_country):
-        print('Downloading config...')
+        output.itemize('Downloading config...')
 
         downloaded_config = self._session.get(
             self._config_url.format(exit_country),
@@ -167,7 +169,7 @@ class Client(object):
 
     @staticmethod
     def _log_errors(exception):
-        print(exception.message)
+        output.error(exception.message)
         if hasattr(exception, 'errors'):
             for error in exception.errors:
-                print(' - {}'.format(error))
+                output.error(' - {}'.format(error))

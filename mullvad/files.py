@@ -13,9 +13,11 @@ import os
 import shutil
 import zipfile
 
+from . import output
+
 
 def unzip(file_name):
-    print('Unzipping file', file_name)
+    output.itemize('Unzipping file \'{}\''.format(file_name))
 
     dest_dir = os.path.dirname(file_name)
     zip_file = zipfile.ZipFile(file_name)
@@ -26,7 +28,9 @@ def unzip(file_name):
 
 
 def move(src_dir, dst_dir):
-    print('Moving files from \'{}\' to \'{}\''.format(src_dir, dst_dir))
+    output.itemize(
+        'Moving files from \'{}\' to \'{}\''.format(src_dir, dst_dir)
+    )
 
     for node in os.listdir(src_dir):
         node_name = os.path.join(src_dir, node)
