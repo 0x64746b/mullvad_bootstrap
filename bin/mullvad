@@ -29,6 +29,30 @@ def _check_root():
         )
 
 
+def _parse_command_line_args():
+    """Parse command line arguments."""
+    main_command = argparse.ArgumentParser(description=__doc__)
+    sub_commands = main_command.add_subparsers(
+        dest='selected_command',
+        metavar='sub-command'
+    )
+
+    bootstrap_command = sub_commands.add_parser(
+        'bootstrap',
+        help=bootstrap.__doc__
+    )
+    bootstrap_command.add_argument(
+        '-e',
+        '--exit-country',
+        metavar='TLD',
+        default='se',
+        choices=['ca', 'de', 'nl','se', 'us'],
+        help='select an exit country [default: %(default)s]',
+    )
+
+    return main_command.parse_args()
+
+
 def _install_interrupt_handler():
     """Suppress stack trace on Ctrl-C."""
     signal.signal(signal.SIGINT, lambda s, f: sys.exit('Aborting.'))
@@ -83,26 +107,8 @@ def bootstrap(args):
 
 
 if __name__ == '__main__':
-    main_command = argparse.ArgumentParser(description=__doc__)
-    sub_commands = main_command.add_subparsers(
-        dest='selected_command',
-        metavar='sub-command'
-    )
 
-    bootstrap_command = sub_commands.add_parser(
-        'bootstrap',
-        help=bootstrap.__doc__
-    )
-    bootstrap_command.add_argument(
-        '-e',
-        '--exit-country',
-        metavar='TLD',
-        default='se',
-        choices=['ca', 'de', 'nl','se', 'us'],
-        help='select an exit country [default: %(default)s]',
-    )
-
-    cli_args = main_command.parse_args()
+    cli_args = _parse_command_line_args()
 
     _install_interrupt_handler()
 
