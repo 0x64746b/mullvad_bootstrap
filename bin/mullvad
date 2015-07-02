@@ -87,6 +87,8 @@ def bootstrap(args):
         config_dir = files.unzip(config_file)
         files.move(config_dir, network.OPENVPN_CONFIG_DIR)
 
+    original_connection = network.get_connection_info()
+
     try:
         network.start_vpn_service()
     except Exception as error:
@@ -99,7 +101,7 @@ def bootstrap(args):
     except Exception as error:
         output.die('Failed to verify connectivity: {}'.format(error.message))
     else:
-        network.check_external_ip()
+        network.check_external_ip(original_connection)
 
     output.notify(
         '\nBootstrapped a VPN connection from new Mullvad account {}.'.format(

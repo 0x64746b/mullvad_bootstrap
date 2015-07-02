@@ -42,6 +42,19 @@ class InfoSniperTable(dict):
 
         return {header: value for header, value in zip(headers, values)}
 
+    def __str__(self):
+        return (
+            '\n'
+            ' - ISP: {} in {}/{}\n'
+            ' - IP: {} ({})'.format(
+                self['Provider'],
+                self['Continent'],
+                self['Country'],
+                self['IP Address'],
+                self['Hostname'],
+            )
+        )
+
 
 def start_vpn_service():
     output.itemize('Starting VPN service...')
@@ -101,24 +114,19 @@ def ping(ip='4.2.2.2'):
         print(packets)
 
 
-def check_external_ip():
-    output.itemize('Checking external IP...')
+def get_connection_info():
+    output.itemize('Getting connection info...')
 
     infos = requests.get('http://www.infosniper.net').content
     html = bs4.BeautifulSoup(infos)
 
-    table = InfoSniperTable(html.table)
+    return InfoSniperTable(html.table)
 
-    print(
-        ' - ISP: {} in {}/{}'.format(
-            table['Provider'],
-            table['Continent'],
-            table['Country'],
-        )
-    )
-    print(
-        ' - IP: {} ({})'.format(
-            table['IP Address'],
-            table['Hostname'],
-        )
-    )
+
+def check_external_ip(original_connection):
+    output.itemize('Checking external IP...')
+
+    current_connection = get_connection_info()
+
+    print('Original connection: {}'.format(original_connection))
+    print('Current connection: {}'.format(current_connection))
