@@ -101,7 +101,7 @@ def bootstrap(args):
     except Exception as error:
         output.die('Failed to verify connectivity: {}'.format(error.message))
     else:
-        network.check_external_ip(original_connection)
+        network.check_external_ip(original_connection, args.exit_country)
 
     output.notify(
         '\nBootstrapped a VPN connection from new Mullvad account {}.'.format(

@@ -123,10 +123,19 @@ def get_connection_info():
     return InfoSniperTable(html.table)
 
 
-def check_external_ip(original_connection):
+def check_external_ip(original_connection, requested_exit_country):
     output.itemize('Checking external IP...')
 
     current_connection = get_connection_info()
+    actual_exit_country = current_connection['TLD'].lower()
+
+    if actual_exit_country != requested_exit_country:
+        raise NetworkError(
+            'Current connection ends in \'{}\', not in \'{}\''.format(
+                actual_exit_country,
+                requested_exit_country
+            )
+        )
 
     print('Original connection: {}'.format(original_connection))
     print('Current connection: {}'.format(current_connection))
