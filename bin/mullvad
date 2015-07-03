@@ -20,54 +20,6 @@ import signal
 from mullvad import files, network, output, webapp
 
 
-def _parse_command_line_args():
-    """Parse command line arguments."""
-    main_command = argparse.ArgumentParser(description=__doc__)
-    sub_commands = main_command.add_subparsers(
-        dest='selected_command',
-        metavar='sub-command'
-    )
-
-    bootstrap_command = sub_commands.add_parser(
-        'bootstrap',
-        help=bootstrap.__doc__
-    )
-    bootstrap_command.add_argument(
-        '-e',
-        '--exit-country',
-        metavar='TLD',
-        default='se',
-        choices=['ca', 'de', 'nl','se', 'us'],
-        help='select an exit country [default: %(default)s]',
-    )
-
-    return main_command.parse_args()
-
-
-def _install_interrupt_handler():
-    """Suppress stack trace on Ctrl-C."""
-    signal.signal(signal.SIGINT, lambda s, f: output.die('Aborting.'))
-
-
-def _remind_of_awesomeness():
-    output.notify(
-        '\n'
-        'Mullvad provides an awesome service!!1'
-        ' Support them by adding a monthly subscription to your account.'
-        ' Help keep the service alive!'
-        '\n',
-    )
-
-
-def _check_root():
-    """Check if the script is being run by root."""
-    if os.geteuid() != 0:
-        output.die(
-            'This script has to be run as root in order to configure the VPN'
-            ' service. Exiting.'
-        )
-
-
 def bootstrap(args):
     """Bootstrap a VPN connection from a new Mullvad test account."""
     _check_root()
@@ -108,6 +60,54 @@ def bootstrap(args):
             account_number
         )
     )
+
+
+def _check_root():
+    """Check if the script is being run by root."""
+    if os.geteuid() != 0:
+        output.die(
+            'This script has to be run as root in order to configure the VPN'
+            ' service. Exiting.'
+        )
+
+
+def _remind_of_awesomeness():
+    output.notify(
+        '\n'
+        'Mullvad provides an awesome service!!1'
+        ' Support them by adding a monthly subscription to your account.'
+        ' Help keep the service alive!'
+        '\n',
+    )
+
+
+def _install_interrupt_handler():
+    """Suppress stack trace on Ctrl-C."""
+    signal.signal(signal.SIGINT, lambda s, f: output.die('Aborting.'))
+
+
+def _parse_command_line_args():
+    """Parse command line arguments."""
+    main_command = argparse.ArgumentParser(description=__doc__)
+    sub_commands = main_command.add_subparsers(
+        dest='selected_command',
+        metavar='sub-command'
+    )
+
+    bootstrap_command = sub_commands.add_parser(
+        'bootstrap',
+        help=bootstrap.__doc__
+    )
+    bootstrap_command.add_argument(
+        '-e',
+        '--exit-country',
+        metavar='TLD',
+        default='se',
+        choices=['ca', 'de', 'nl','se', 'us'],
+        help='select an exit country [default: %(default)s]',
+    )
+
+    return main_command.parse_args()
 
 
 if __name__ == '__main__':
