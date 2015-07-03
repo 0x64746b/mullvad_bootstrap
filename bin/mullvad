@@ -17,7 +17,7 @@ import argparse
 import os
 import signal
 
-from mullvad import files, network, output, webapp
+from mullvad import files, firewall, network, output, webapp
 
 
 def bootstrap(args):
@@ -64,7 +64,7 @@ def bootstrap(args):
 
 def protect(args):
     """Block all traffic not going through the VPN tunnel."""
-    print('Protecting!!1')
+    firewall.backup_config()
 
 
 def _check_root():
