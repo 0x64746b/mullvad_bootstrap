@@ -62,6 +62,11 @@ def bootstrap(args):
     )
 
 
+def protect(args):
+    """Block all traffic not going through the VPN tunnel."""
+    print('Protecting!!1')
+
+
 def _check_root():
     """Check if the script is being run by root."""
     if os.geteuid() != 0:
@@ -107,7 +112,18 @@ def _parse_command_line_args():
         help='select an exit country [default: %(default)s]',
     )
 
+    protect_command = sub_commands.add_parser(
+        'protect',
+        help=protect.__doc__
+    )
+
     return main_command.parse_args()
+
+
+COMMANDS = {
+    'bootstrap': bootstrap,
+    'protect': protect,
+}
 
 
 if __name__ == '__main__':
@@ -118,4 +134,4 @@ if __name__ == '__main__':
 
     _remind_of_awesomeness()
 
-    bootstrap(cli_args)
+    COMMANDS[cli_args.selected_command](cli_args)
