@@ -65,6 +65,7 @@ def bootstrap(args):
 def protect(args):
     """Block all traffic not going through the VPN tunnel."""
     firewall.backup_config()
+    firewall.block_traffic()
 
 
 def _check_root():
