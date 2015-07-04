@@ -90,10 +90,10 @@ def _check_root():
 def _remind_of_awesomeness():
     output.notify(
         '\n'
-        'Mullvad provides an awesome service!!1'
-        ' Support them by adding a monthly subscription to your account.'
-        ' Help keep the service alive!'
-        '\n',
+        'Mullvad provides an awesome service!!1\n'
+        'Support them by adding a monthly subscription to your account.\n'
+        'Help keep the service alive!'
+        '\n'
     )
 
 
