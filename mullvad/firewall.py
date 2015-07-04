@@ -30,7 +30,10 @@ def backup_config():
 def block_traffic():
     output.itemize('Blocking relatable traffic...')
 
-    output.itemize('Removing existing routes', level=1)
+    output.itemize('Resetting config', level=1)
+    sh.iptables('-P', 'INPUT', 'ACCEPT')
+    sh.iptables('-P', 'FORWARD', 'ACCEPT')
+    sh.iptables('-P', 'OUTPUT', 'ACCEPT')
     sh.iptables('-F')
 
     output.itemize('Allowing traffic over loopback interface', level=1)
