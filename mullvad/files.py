@@ -36,3 +36,9 @@ def move(src_dir, dst_dir):
         node_name = os.path.join(src_dir, node)
         if os.path.isfile(node_name):
             shutil.copy(node_name, dst_dir)
+
+
+def remove(directory, _output_level=0):
+    output.itemize('Removing \'{}\''.format(directory), _output_level)
+
+    shutil.rmtree(directory)

@@ -38,6 +38,7 @@ def bootstrap(args):
     else:
         config_dir = files.unzip(config_file)
         files.move(config_dir, network.OPENVPN_CONFIG_DIR)
+        files.remove(os.path.dirname(config_dir))
 
     original_connection = network.get_connection_info(_output_level=0)
 

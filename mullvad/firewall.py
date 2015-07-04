@@ -16,7 +16,7 @@ import tempfile
 
 import sh
 
-from . import network, output
+from . import files, network, output
 
 
 def backup_config():
@@ -37,6 +37,7 @@ def restore_config(config_file):
     )
 
     sh.iptables_restore(sh.cat(config_file))
+    files.remove(os.path.dirname(config_file), _output_level=1)
 
 
 def block_traffic():
