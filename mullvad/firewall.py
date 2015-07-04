@@ -44,9 +44,11 @@ def block_traffic():
     output.itemize('Allowing traffic over local networks', level=1)
     lans = _get_local_networks()
     for lan in lans:
-        output.itemize('Allowing traffic for {}'.format(lan), level=2)
-        sh.iptables('-I', 'INPUT', '-s', lan, '-j', 'ACCEPT')
-        sh.iptables('-I', 'OUTPUT', '-d', lan, '-j', 'ACCEPT')
+        output.itemize(
+            'Allowing traffic over {} for {}'.format(lan[0], lan[1]), level=2
+        )
+        sh.iptables('-I', 'INPUT', '-i', lan[0], '-s', lan[1], '-j', 'ACCEPT')
+        sh.iptables('-I', 'OUTPUT', '-o', lan[0], '-d', lan[1], '-j', 'ACCEPT')
 
     output.itemize('Allowing traffic over VPN interface', level=1)
     sh.iptables('-I', 'INPUT', '-i', 'tun+', '-j', 'ACCEPT')
@@ -99,7 +101,7 @@ def _get_local_networks():
                 interface = ipaddress.IPv4Interface(
                     '{}/{}'.format(address['addr'], address['netmask'])
                 )
-                networks.append(str(interface.network))
+                networks.append((name, str(interface.network)))
 
     return networks
 
