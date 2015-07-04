@@ -28,6 +28,16 @@ def backup_config():
 
     sh.iptables_save(_out=backup_file)
 
+    return backup_file
+
+
+def restore_config(config_file):
+    output.itemize(
+        'Restoring firewall configuration from \'{}\''.format(config_file)
+    )
+
+    sh.iptables_restore(sh.cat(config_file))
+
 
 def block_traffic():
     output.itemize('Blocking relatable traffic...')

@@ -64,7 +64,7 @@ def bootstrap(args):
 
 def protect(args):
     """Block all traffic not going through the VPN tunnel."""
-    firewall.backup_config()
+    backup_file = firewall.backup_config()
 
     try:
         firewall.block_traffic()
@@ -74,6 +74,8 @@ def protect(args):
         )
 
     firewall.abort_prompt()
+
+    firewall.restore_config(backup_file)
 
 
 def _check_root():
