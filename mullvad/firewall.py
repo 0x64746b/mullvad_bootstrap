@@ -10,6 +10,8 @@ from __future__ import (
 
 
 import os.path
+import random
+import string
 import tempfile
 
 import sh
@@ -79,3 +81,16 @@ def block_traffic():
 
     for line in sh.iptables('-vL', _iter=True):
         print(line.rstrip())
+
+
+def abort_prompt():
+    security_code = ''.join(random.choice(string.lowercase) for i in range(4))
+
+    output.itemize(
+        'Enter \'{}\' to terminate protection'.format(security_code)
+    )
+    entered_code = raw_input('Security code: ')
+
+    if entered_code != security_code:
+        output.error('Invalid code')
+        abort_prompt()
