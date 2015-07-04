@@ -74,4 +74,5 @@ def block_traffic():
     sh.iptables('-P', 'OUTPUT', 'DROP')
     sh.iptables('-P', 'FORWARD', 'DROP')
 
-    print(sh.iptables('-vL'))
+    for line in sh.iptables('-vL', _iter=True):
+        print(line.rstrip())
