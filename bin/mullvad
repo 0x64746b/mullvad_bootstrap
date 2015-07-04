@@ -17,7 +17,89 @@ import argparse
 import os
 import signal
 
-from mullvad import files, network, output, webapp
+from mullvad import files, firewall, network, output, webapp
+
+
+def bootstrap(args):
+    """Bootstrap a VPN connection from a new Mullvad test account."""
+    _check_root()
+
+    mullvad = webapp.Client()
+
+    try:
+        account_number = mullvad.create_account()
+    except Exception as error:
+        output.die('Failed to create account: {}'.format(error.message))
+
+    try:
+        config_file = mullvad.download_config(args.exit_country)
+    except Exception as error:
+        output.die('Failed to download config: {}'.format(error.message))
+    else:
+        config_dir = files.unzip(config_file)
+        files.move(config_dir, network.OPENVPN_CONFIG_DIR)
+
+    original_connection = network.get_connection_info(_output_level=0)
+
+    try:
+        network.start_vpn_service()
+    except Exception as error:
+        output.die('Failed to connect to VPN: {}'.format(error.message))
+    else:
+        network.remove_unencrypted_default_routes()
+
+    try:
+        network.ping()
+    except Exception as error:
+        output.die('Failed to verify connectivity: {}'.format(error.message))
+    else:
+        network.check_external_ip(original_connection, args.exit_country)
+
+    output.notify(
+        '\nBootstrapped a VPN connection from new Mullvad account {}.'.format(
+            account_number
+        )
+    )
+
+
+def protect(args):
+    """Block all traffic not going through the VPN tunnel."""
+    backup_file = firewall.backup_config()
+
+    try:
+        firewall.block_traffic()
+    except Exception as error:
+        output.die(
+            'Failed to install iptables rules: {}'.format(error.message)
+        )
+
+    firewall.abort_prompt()
+
+    firewall.restore_config(backup_file)
+
+
+def _check_root():
+    """Check if the script is being run by root."""
+    if os.geteuid() != 0:
+        output.die(
+            'This script has to be run as root in order to configure the VPN'
+            ' service. Exiting.'
+        )
+
+
+def _remind_of_awesomeness():
+    output.notify(
+        '\n'
+        'Mullvad provides an awesome service!!1'
+        ' Support them by adding a monthly subscription to your account.'
+        ' Help keep the service alive!'
+        '\n',
+    )
+
+
+def _install_interrupt_handler():
+    """Suppress stack trace on Ctrl-C."""
+    signal.signal(signal.SIGINT, lambda s, f: output.die('Aborting.'))
 
 
 def _parse_command_line_args():
@@ -41,73 +123,18 @@ def _parse_command_line_args():
         help='select an exit country [default: %(default)s]',
     )
 
+    protect_command = sub_commands.add_parser(
+        'protect',
+        help=protect.__doc__
+    )
+
     return main_command.parse_args()
 
 
-def _install_interrupt_handler():
-    """Suppress stack trace on Ctrl-C."""
-    signal.signal(signal.SIGINT, lambda s, f: output.die('Aborting.'))
-
-
-def _remind_of_awesomeness():
-    output.notify(
-        '\n'
-        'Mullvad provides an awesome service!!1'
-        ' Support them by adding a monthly subscription to your account.'
-        ' Help keep the service alive!'
-        '\n',
-    )
-
-
-def _check_root():
-    """Check if the script is being run by root."""
-    if os.geteuid() != 0:
-        output.die(
-            'This script has to be run as root in order to configure the VPN'
-            ' service. Exiting.'
-        )
-
-
-def bootstrap(args):
-    """Bootstrap a VPN connection from a new Mullvad test account."""
-    _check_root()
-
-    mullvad = webapp.Client()
-
-    try:
-        account_number = mullvad.create_account()
-    except Exception as error:
-        output.die('Failed to create account: {}'.format(error.message))
-
-    try:
-        config_file = mullvad.download_config(args.exit_country)
-    except Exception as error:
-        output.die('Failed to download config: {}'.format(error.message))
-    else:
-        config_dir = files.unzip(config_file)
-        files.move(config_dir, network.OPENVPN_CONFIG_DIR)
-
-    original_connection = network.get_connection_info()
-
-    try:
-        network.start_vpn_service()
-    except Exception as error:
-        output.die('Failed to connect to VPN: {}'.format(error.message))
-    else:
-        network.remove_unencrypted_default_routes()
-
-    try:
-        network.ping()
-    except Exception as error:
-        output.die('Failed to verify connectivity: {}'.format(error.message))
-    else:
-        network.check_external_ip(original_connection, args.exit_country)
-
-    output.notify(
-        '\nBootstrapped a VPN connection from new Mullvad account {}.'.format(
-            account_number
-        )
-    )
+COMMANDS = {
+    'bootstrap': bootstrap,
+    'protect': protect,
+}
 
 
 if __name__ == '__main__':
@@ -118,4 +145,4 @@ if __name__ == '__main__':
 
     _remind_of_awesomeness()
 
-    bootstrap(cli_args)
+    COMMANDS[cli_args.selected_command](cli_args)
