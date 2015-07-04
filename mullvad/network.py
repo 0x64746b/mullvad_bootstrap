@@ -114,8 +114,8 @@ def ping(ip='4.2.2.2'):
         print(packets)
 
 
-def get_connection_info():
-    output.itemize('Getting connection info...')
+def get_connection_info(_output_level=1):
+    output.itemize('Getting connection info...', _output_level)
 
     infos = requests.get('http://www.infosniper.net').content
     html = bs4.BeautifulSoup(infos)

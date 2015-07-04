@@ -39,7 +39,7 @@ def bootstrap(args):
         config_dir = files.unzip(config_file)
         files.move(config_dir, network.OPENVPN_CONFIG_DIR)
 
-    original_connection = network.get_connection_info()
+    original_connection = network.get_connection_info(_output_level=0)
 
     try:
         network.start_vpn_service()

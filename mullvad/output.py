@@ -19,12 +19,12 @@ def notify(text):
     termcolor.cprint(text, 'green', attrs=['bold'])
 
 
-def itemize(text):
-    print(_make_item(text))
+def itemize(text, level=0):
+    print(_make_item(text, level))
 
 
-def _make_item(text):
-    return termcolor.colored('[*] ' + text, 'green')
+def _make_item(text, level=0):
+    return termcolor.colored('    ' * level + '[*] ' + text, 'green')
 
 
 def error(text):
