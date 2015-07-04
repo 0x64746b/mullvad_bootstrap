@@ -52,6 +52,7 @@ class Attempts(object):
     @successful.setter
     def successful(self, value):
         self._successful = value
+        time.sleep(self._delay)
 
     def __enter__(self):
         sys.stdout.write(self._item)
