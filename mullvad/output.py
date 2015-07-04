@@ -37,8 +37,8 @@ def die(text):
 
 class Attempts(object):
 
-    def __init__(self, text, num_attempts=10, delay=1):
-        self._item = _make_item(text)
+    def __init__(self, text, num_attempts=10, delay=1, _output_level=0):
+        self._item = _make_item(text, level=_output_level)
         self._num_attempts = num_attempts
         self._delay = delay
 

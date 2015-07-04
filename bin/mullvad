@@ -65,7 +65,13 @@ def bootstrap(args):
 def protect(args):
     """Block all traffic not going through the VPN tunnel."""
     firewall.backup_config()
-    firewall.block_traffic()
+
+    try:
+        firewall.block_traffic()
+    except Exception as error:
+        output.die(
+            'Failed to install iptables rules: {}'.format(error.message)
+        )
 
 
 def _check_root():

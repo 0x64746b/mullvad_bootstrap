@@ -10,15 +10,11 @@ from __future__ import (
 
 
 import os.path
-import re
-import socket
 import tempfile
 
-import ipaddress
-import netifaces
 import sh
 
-from . import output
+from . import network, output
 
 
 def backup_config():
@@ -42,7 +38,7 @@ def block_traffic():
     sh.iptables('-I', 'OUTPUT', '-o', 'lo', '-j', 'ACCEPT')
 
     output.itemize('Allowing traffic over local networks', level=1)
-    lans = _get_local_networks()
+    lans = network.get_local_networks()
     for lan in lans:
         output.itemize(
             'Allowing traffic over {} for {}'.format(lan[0], lan[1]), level=2
@@ -55,7 +51,7 @@ def block_traffic():
     sh.iptables('-I', 'OUTPUT', '-o', 'tun+', '-j', 'ACCEPT')
 
     output.itemize('Allowing traffic to VPN gateway', level=1)
-    vpn_gate = _get_vpn_gateway()
+    vpn_gate = network.get_vpn_gateway()
     sh.iptables(
         '-I', 'INPUT',
         '-i', vpn_gate[0],
@@ -79,45 +75,3 @@ def block_traffic():
     sh.iptables('-P', 'FORWARD', 'DROP')
 
     print(sh.iptables('-vL'))
-
-
-def _get_local_networks():
-    blacklisted_ifaces = ['lo', 'tun0']
-    networks = []
-
-    iface_names = filter(
-        lambda iface: iface not in blacklisted_ifaces,
-        netifaces.interfaces()
-    )
-
-    for name in iface_names:
-        try:
-            ipv4_addresses = netifaces.ifaddresses(name)[netifaces.AF_INET]
-        except KeyError:
-            output.itemize(
-                'Skipping inactive interface {}'.format(name),
-                level=2
-            )
-        else:
-            for address in ipv4_addresses:
-                interface = ipaddress.IPv4Interface(
-                    '{}/{}'.format(address['addr'], address['netmask'])
-                )
-                networks.append((name, str(interface.network)))
-
-    return networks
-
-
-def _get_vpn_gateway(_output_level=2):
-    output.itemize('Resolving IP of VPN gateway', _output_level)
-    route = sh.route()
-
-    row = re.search(
-        '^(?P<domain>.+\.mullvad\.net) .+ (?P<device>.+)$',
-        route.stdout,
-        re.MULTILINE
-    )
-
-    gateway_ip = socket.gethostbyname(row.group('domain'))
-
-    return (row.group('device'), gateway_ip)
