@@ -58,15 +58,17 @@ def block_traffic():
     vpn_gate = _get_vpn_gateway()
     sh.iptables(
         '-I', 'INPUT',
+        '-i', vpn_gate[0],
         '-p', 'udp',
-        '-s', vpn_gate,
+        '-s', vpn_gate[1],
         '--sport', '1300',
         '-j', 'ACCEPT'
     )
     sh.iptables(
         '-I', 'OUTPUT',
+        '-o', vpn_gate[0],
         '-p', 'udp',
-        '-d', vpn_gate,
+        '-d', vpn_gate[1],
         '--dport', '1300',
         '-j', 'ACCEPT'
     )
@@ -110,10 +112,12 @@ def _get_vpn_gateway(_output_level=2):
     output.itemize('Resolving IP of VPN gateway', _output_level)
     route = sh.route()
 
-    domain = re.search(
-        '^(.+\.mullvad\.net)',
+    row = re.search(
+        '^(?P<domain>.+\.mullvad\.net) .+ (?P<device>.+)$',
         route.stdout,
         re.MULTILINE
-    ).group()
+    )
 
-    return socket.gethostbyname(domain)
+    gateway_ip = socket.gethostbyname(row.group('domain'))
+
+    return (row.group('device'), gateway_ip)
