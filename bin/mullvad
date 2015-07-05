@@ -43,11 +43,11 @@ def bootstrap(args):
     original_connection = network.get_connection_info(_output_level=0)
 
     try:
-        network.start_vpn_service()
+        tunnel_device = network.start_vpn_service()
     except Exception as error:
         output.die('Failed to connect to VPN: {}'.format(error.message))
     else:
-        network.remove_unencrypted_default_routes()
+        network.remove_unencrypted_default_routes(tunnel_device)
 
     try:
         network.ping()
@@ -68,7 +68,7 @@ def protect(args):
     backup_file = firewall.backup_config()
 
     try:
-        firewall.block_traffic()
+        firewall.block_traffic(args.tunnel_device)
     except Exception as error:
         output.die(
             'Failed to install iptables rules: {}'.format(error.message)
@@ -127,6 +127,13 @@ def _parse_command_line_args():
     protect_command = sub_commands.add_parser(
         'protect',
         help=protect.__doc__
+    )
+    protect_command.add_argument(
+        '-t',
+        '--tunnel-device',
+        metavar='DEV',
+        default='tun0',
+        help='The virtual network device of the tunnel [default: %(default)s]'
     )
 
     return main_command.parse_args()

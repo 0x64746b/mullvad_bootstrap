@@ -11,6 +11,7 @@ from __future__ import (
 
 import re
 import socket
+import time
 
 import bs4
 import ipaddress
@@ -22,7 +23,7 @@ from . import output
 
 
 OPENVPN_CONFIG_DIR = '/etc/openvpn/'
-TUNNEL_DEVICE = 'tun0'
+TUNNEL_PREFIX = 'tun'
 
 
 class NetworkError(Exception):
@@ -60,21 +61,64 @@ class InfoSniperTable(dict):
 
 
 def start_vpn_service():
-    output.itemize('Starting VPN service...')
+    output.itemize('Restarting VPN service...')
 
-    sh.service('openvpn', 'restart')
+    openvpn = sh.service.bake('openvpn')
+
+    # stop openvpn to remove an existing tunnel device
+    openvpn('stop')
+    time.sleep(1)
+    existing_devices = netifaces.interfaces()
+
+    openvpn('start')
+
+    # detect upcoming device
+    tunnel_device = _detect_tunnel_device(existing_devices)
 
     # wait for configuration to be applied
-    _wait_for_routes()
+    _wait_for_routes(tunnel_device)
+
+    return tunnel_device
 
 
-def _wait_for_routes():
+def _detect_tunnel_device(existing_devices):
+    with output.Attempts('Detecting tunnel device', num_attempts=15) as attempts:
+        tunnel_device = None
+
+        for attempt in attempts:
+            new_tunnels = filter(
+                lambda dev:
+                    dev.startswith(TUNNEL_PREFIX) and
+                    dev not in existing_devices,
+                netifaces.interfaces()
+            )
+
+            if len(new_tunnels) == 0:
+                attempt.passed()
+            elif len(new_tunnels) == 1:
+                tunnel_device = new_tunnels.pop()
+                attempt.successful = True
+            else:
+                raise NetworkError(
+                    'Failed to uniquely identify tunnel device: {} new devices'
+                    ' detected: {}'.format(len(new_tunnels), new_tunnels)
+                )
+
+        if not attempts.successful:
+            raise NetworkError(
+                'Failed to detect tunnel device: No new tunnels found.'
+            )
+
+        return tunnel_device
+
+
+def _wait_for_routes(tunnel_device):
     route = sh.route.bake('-n')
 
     with output.Attempts('Waiting for routes to be established') as attempts:
         for attempt in attempts:
             if re.search(
-                'Iface\n0\.0\.0\.0.+{}'.format(TUNNEL_DEVICE),
+                'Iface\n0\.0\.0\.0.+{}'.format(tunnel_device),
                 route().stdout
             ):
                 attempt.successful = True
@@ -85,18 +129,18 @@ def _wait_for_routes():
             raise NetworkError('No default route through tunnel was set')
 
 
-def remove_unencrypted_default_routes():
+def remove_unencrypted_default_routes(tunnel_device):
     route = sh.route.bake('-n')
 
-    interfaces = re.findall(
+    default_interfaces = re.findall(
         '^0\.0\.0\.0 .+ (\w+)$',
         route().stdout,
         re.MULTILINE
     )
 
     for device in filter(
-        lambda device: device != TUNNEL_DEVICE,
-        interfaces
+        lambda device: device != tunnel_device,
+        default_interfaces
     ):
         output.itemize(
             'Removing default route from interface {}'.format(device)
@@ -144,8 +188,8 @@ def check_external_ip(original_connection, requested_exit_country):
     print('Current connection: {}'.format(current_connection))
 
 
-def get_local_networks():
-    blacklisted_ifaces = ['lo', TUNNEL_DEVICE]
+def get_local_networks(tunnel_device):
+    blacklisted_ifaces = ['lo', tunnel_device]
     networks = []
 
     iface_names = filter(
