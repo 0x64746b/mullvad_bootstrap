@@ -145,7 +145,7 @@ def check_external_ip(original_connection, requested_exit_country):
 
 
 def get_local_networks():
-    blacklisted_ifaces = ['lo', 'tun0']
+    blacklisted_ifaces = ['lo', TUNNEL_DEVICE]
     networks = []
 
     iface_names = filter(
