@@ -40,7 +40,7 @@ def restore_config(config_file):
     files.remove(os.path.dirname(config_file), _output_level=1)
 
 
-def block_traffic():
+def block_traffic(tunnel_device):
     output.itemize('Blocking relatable traffic...')
 
     output.itemize('Resetting config', level=1)
@@ -54,7 +54,7 @@ def block_traffic():
     sh.iptables('-I', 'OUTPUT', '-o', 'lo', '-j', 'ACCEPT')
 
     output.itemize('Allowing traffic over local networks', level=1)
-    lans = network.get_local_networks()
+    lans = network.get_local_networks(tunnel_device)
     for lan in lans:
         output.itemize(
             'Allowing traffic over {} for {}'.format(lan[0], lan[1]), level=2
@@ -63,8 +63,8 @@ def block_traffic():
         sh.iptables('-I', 'OUTPUT', '-o', lan[0], '-d', lan[1], '-j', 'ACCEPT')
 
     output.itemize('Allowing traffic over VPN interface', level=1)
-    sh.iptables('-I', 'INPUT', '-i', 'tun+', '-j', 'ACCEPT')
-    sh.iptables('-I', 'OUTPUT', '-o', 'tun+', '-j', 'ACCEPT')
+    sh.iptables('-I', 'INPUT', '-i', tunnel_device, '-j', 'ACCEPT')
+    sh.iptables('-I', 'OUTPUT', '-o', tunnel_device, '-j', 'ACCEPT')
 
     output.itemize('Allowing traffic to VPN gateway', level=1)
     vpn_gate = network.get_vpn_gateway()
