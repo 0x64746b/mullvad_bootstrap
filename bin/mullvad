@@ -37,13 +37,17 @@ def bootstrap(args):
         output.die('Failed to download config: {}'.format(error.message))
     else:
         config_dir = files.unzip(config_file)
+        tunnel_prefix = files.grep(
+            '^dev (\w+)$',
+            os.path.join(config_dir, 'mullvad_linux.conf')
+        )[0]
         files.move(config_dir, network.OPENVPN_CONFIG_DIR)
         files.remove(os.path.dirname(config_dir))
 
     original_connection = network.get_connection_info(_output_level=0)
 
     try:
-        tunnel_device = network.start_vpn_service(args.tunnel_prefix)
+        tunnel_device = network.start_vpn_service(tunnel_prefix)
     except Exception as error:
         output.die('Failed to connect to VPN: {}'.format(error.message))
     else:
@@ -122,14 +126,6 @@ def _parse_command_line_args():
         default='se',
         choices=['ca', 'de', 'nl','se', 'us'],
         help='select an exit country [default: %(default)s]',
-    )
-    bootstrap_command.add_argument(
-        '-t',
-        '--tunnel-prefix',
-        metavar='PREFIX',
-        default='tun',
-        help='The prefix of the tunnel device that is going to be created'
-             ' (defined in the OpenVPN config file) [default: %(default)s]'
     )
 
     protect_command = sub_commands.add_parser(

@@ -10,6 +10,7 @@ from __future__ import (
 
 
 import os
+import re
 import shutil
 import zipfile
 
@@ -25,6 +26,15 @@ def unzip(file_name):
     zip_root = os.path.dirname(zip_file.namelist()[0])
 
     return os.path.join(dest_dir, zip_root)
+
+
+def grep(regex, file_name):
+    output.itemize('Extracting \'{}\' from \'{}\''.format(regex, file_name))
+    with open(file_name) as input_file:
+        for line in input_file.readlines():
+            match = re.search(regex, line)
+            if match:
+                return match.groups()
 
 
 def move(src_dir, dst_dir):
