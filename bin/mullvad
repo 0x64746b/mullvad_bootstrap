@@ -43,7 +43,7 @@ def bootstrap(args):
     original_connection = network.get_connection_info(_output_level=0)
 
     try:
-        tunnel_device = network.start_vpn_service()
+        tunnel_device = network.start_vpn_service(args.tunnel_prefix)
     except Exception as error:
         output.die('Failed to connect to VPN: {}'.format(error.message))
     else:
@@ -122,6 +122,14 @@ def _parse_command_line_args():
         default='se',
         choices=['ca', 'de', 'nl','se', 'us'],
         help='select an exit country [default: %(default)s]',
+    )
+    bootstrap_command.add_argument(
+        '-t',
+        '--tunnel-prefix',
+        metavar='PREFIX',
+        default='tun',
+        help='The prefix of the tunnel device that is going to be created'
+             ' (defined in the OpenVPN config file) [default: %(default)s]'
     )
 
     protect_command = sub_commands.add_parser(

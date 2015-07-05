@@ -23,7 +23,6 @@ from . import output
 
 
 OPENVPN_CONFIG_DIR = '/etc/openvpn/'
-TUNNEL_PREFIX = 'tun'
 
 
 class NetworkError(Exception):
@@ -60,7 +59,7 @@ class InfoSniperTable(dict):
         )
 
 
-def start_vpn_service():
+def start_vpn_service(tunnel_prefix):
     output.itemize('Restarting VPN service...')
 
     openvpn = sh.service.bake('openvpn')
@@ -73,7 +72,7 @@ def start_vpn_service():
     openvpn('start')
 
     # detect upcoming device
-    tunnel_device = _detect_tunnel_device(existing_devices)
+    tunnel_device = _detect_tunnel_device(existing_devices, tunnel_prefix)
 
     # wait for configuration to be applied
     _wait_for_routes(tunnel_device)
@@ -81,14 +80,14 @@ def start_vpn_service():
     return tunnel_device
 
 
-def _detect_tunnel_device(existing_devices):
-    with output.Attempts('Detecting tunnel device', num_attempts=15) as attempts:
+def _detect_tunnel_device(existing_devices, tunnel_prefix):
+    with output.Attempts('Detecting tunnel device', 15) as attempts:
         tunnel_device = None
 
         for attempt in attempts:
             new_tunnels = filter(
                 lambda dev:
-                    dev.startswith(TUNNEL_PREFIX) and
+                    dev.startswith(tunnel_prefix) and
                     dev not in existing_devices,
                 netifaces.interfaces()
             )
