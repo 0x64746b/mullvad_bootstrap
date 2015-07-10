@@ -30,6 +30,28 @@ class NetworkError(Exception):
     pass
 
 
+class TelizeInfos(dict):
+
+    def __init__(self, infos):
+        self.update(infos)
+
+        self['hostname'] = socket.gethostbyaddr(infos['ip'])[0]
+        self['continent'] = transformations.cca_to_ctn(infos['country_code'])
+
+    def __str__(self):
+        return (
+            '\n'
+            ' - ISP: {} in {}/{}\n'
+            ' - IP: {} ({})'.format(
+                self['isp'],
+                self['continent'],
+                self['country'],
+                self['ip'],
+                self['hostname'],
+            )
+        )
+
+
 def start_vpn_service(tunnel_prefix):
     output.itemize('Restarting VPN service...')
 
@@ -143,10 +165,7 @@ def get_connection_info(_output_level=1):
         timeout=3
     ).json()
 
-    infos['hostname'] = socket.gethostbyaddr(infos['ip'])[0]
-    infos['continent'] = transformations.cca_to_ctn(infos['country_code'])
-
-    return infos
+    return TelizeInfos(infos)
 
 
 def check_external_ip(original_connection, requested_exit_country):
