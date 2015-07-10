@@ -38,14 +38,20 @@ class TelizeInfos(dict):
         self['hostname'] = socket.gethostbyaddr(self['ip'])[0]
         self['continent'] = transformations.cca_to_ctn(self['country_code'])
 
+    def _get_location(self):
+        components = [
+            self.get(component)
+            for component in ['continent', 'country', 'region', 'city']
+        ]
+        return ', '.join(components)
+
     def __str__(self):
         return (
             '\n'
-            ' - ISP: {} in {}/{}\n'
+            ' - ISP: {} in {}\n'
             ' - IP: {} ({})'.format(
                 self['isp'],
-                self['continent'],
-                self['country'],
+                self._get_location(),
                 self['ip'],
                 self['hostname'],
             )
