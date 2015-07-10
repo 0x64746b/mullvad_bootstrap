@@ -32,11 +32,11 @@ class NetworkError(Exception):
 
 class TelizeInfos(dict):
 
-    def __init__(self, infos):
-        self.update(infos)
+    def __init__(self, *args, **kwargs):
+        super(TelizeInfos, self).__init__(*args, **kwargs)
 
-        self['hostname'] = socket.gethostbyaddr(infos['ip'])[0]
-        self['continent'] = transformations.cca_to_ctn(infos['country_code'])
+        self['hostname'] = socket.gethostbyaddr(self['ip'])[0]
+        self['continent'] = transformations.cca_to_ctn(self['country_code'])
 
     def __str__(self):
         return (
