@@ -13,7 +13,7 @@ import re
 import socket
 import time
 
-import bs4
+from incf.countryutils import transformations
 import ipaddress
 import netifaces
 import requests
@@ -30,31 +30,30 @@ class NetworkError(Exception):
     pass
 
 
-class InfoSniperTable(dict):
+class TelizeInfos(dict):
 
-    def __init__(self, table):
-        rows = table.find_all('tr')
-        header_rows, value_rows = rows[::2], rows[1::2]
+    def __init__(self, *args, **kwargs):
+        super(TelizeInfos, self).__init__(*args, **kwargs)
 
-        for row_pair in zip(header_rows, value_rows):
-            self.update(self._parse_row(*row_pair))
+        self['hostname'] = socket.gethostbyaddr(self['ip'])[0]
+        self['continent'] = transformations.cca_to_ctn(self['country_code'])
 
-    def _parse_row(self, header_row, value_row):
-        headers = [cell.text for cell in header_row.find_all('td')[::2]]
-        values = [cell.text.strip() for cell in value_row.find_all('td')[::2]]
-
-        return {header: value for header, value in zip(headers, values)}
+    def _get_location(self):
+        components = [
+            self.get(component)
+            for component in ['continent', 'country', 'region', 'city']
+        ]
+        return ', '.join(filter(None, components))
 
     def __str__(self):
         return (
             '\n'
-            ' - ISP: {} in {}/{}\n'
+            ' - ISP: {} in {}\n'
             ' - IP: {} ({})'.format(
-                self['Provider'],
-                self['Continent'],
-                self['Country'],
-                self['IP Address'],
-                self['Hostname'],
+                self['isp'],
+                self._get_location(),
+                self['ip'],
+                self['hostname'],
             )
         )
 
@@ -163,17 +162,23 @@ def ping(ip='4.2.2.2'):
 def get_connection_info(_output_level=1):
     output.itemize('Getting connection info...', _output_level)
 
-    infos = requests.get('http://www.infosniper.net').content
-    html = bs4.BeautifulSoup(infos)
+    # Explicitly use IPv4
+    telize_ip = socket.gethostbyname('www.telize.com')
 
-    return InfoSniperTable(html.table)
+    infos = requests.get(
+        'http://{}/geoip'.format(telize_ip),
+        headers={'Host': 'www.telize.com'},
+        timeout=3
+    ).json()
+
+    return TelizeInfos(infos)
 
 
 def check_external_ip(original_connection, requested_exit_country):
     output.itemize('Checking external IP...')
 
     current_connection = get_connection_info()
-    actual_exit_country = current_connection['TLD'].lower()
+    actual_exit_country = current_connection['country_code'].lower()
 
     if actual_exit_country != requested_exit_country:
         raise NetworkError(
