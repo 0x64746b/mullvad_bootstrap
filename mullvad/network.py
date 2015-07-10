@@ -43,7 +43,7 @@ class TelizeInfos(dict):
             self.get(component)
             for component in ['continent', 'country', 'region', 'city']
         ]
-        return ', '.join(components)
+        return ', '.join(filter(None, components))
 
     def __str__(self):
         return (
