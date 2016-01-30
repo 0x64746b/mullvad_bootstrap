@@ -30,13 +30,17 @@ class NetworkError(Exception):
     pass
 
 
-class TelizeInfos(dict):
+class IpLocation(dict):
 
     def __init__(self, *args, **kwargs):
-        super(TelizeInfos, self).__init__(*args, **kwargs)
+        super(IpLocation, self).__init__(*args, **kwargs)
 
-        self['hostname'] = socket.gethostbyaddr(self['ip'])[0]
+        # preserve telize.com format
+        self['country_code'] = self['country']
+        self['isp'] = self['org']
+
         self['continent'] = transformations.cca_to_ctn(self['country_code'])
+        self['country'] = transformations.cca_to_cn(self['country_code'])
 
     def _get_location(self):
         components = [
@@ -162,16 +166,9 @@ def ping(ip='4.2.2.2'):
 def get_connection_info(_output_level=1):
     output.itemize('Getting connection info...', _output_level)
 
-    # Explicitly use IPv4
-    telize_ip = socket.gethostbyname('www.telize.com')
+    infos = requests.get('http://ipinfo.io', timeout=3).json()
 
-    infos = requests.get(
-        'http://{}/geoip'.format(telize_ip),
-        headers={'Host': 'www.telize.com'},
-        timeout=3
-    ).json()
-
-    return TelizeInfos(infos)
+    return IpLocation(infos)
 
 
 def check_external_ip(original_connection, requested_exit_country):
