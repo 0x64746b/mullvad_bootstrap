@@ -36,15 +36,15 @@ class AccountError(Exception):
 class Client(object):
 
     DOMAIN = 'https://mullvad.net'
-    SETUP_PATH = '/en/setup/openvpn/'
+    SIGNUP_PATH = '/en/signup/'
     CONFIG_PATH = '/en/config/?server={}'
 
     def __init__(self):
 
         self._session = requests.Session()
-        self._setup_url = urlparse.urljoin(
+        self._signup_url = urlparse.urljoin(
             Client.DOMAIN,
-            Client.SETUP_PATH
+            Client.SIGNUP_PATH
         )
         self._config_url = urlparse.urljoin(
             Client.DOMAIN,
@@ -52,12 +52,12 @@ class Client(object):
         )
         self._error_count = 0
 
-    def create_account(self, setup_page=None):
+    def create_account(self, signup_page=None):
 
-        if not setup_page:
-            setup_page = self._session.get(self._setup_url).content
+        if not signup_page:
+            signup_page = self._session.get(self._signup_url).content
 
-        captcha = self._solve_captcha(setup_page)
+        captcha = self._solve_captcha(signup_page)
 
         try:
             account_number = self._login(captcha)
@@ -73,18 +73,20 @@ class Client(object):
 
         return account_number
 
-    def _solve_captcha(self, setup_page):
-        captcha_id, captcha_image = self._fetch_captcha(setup_page)
+    def _solve_captcha(self, signup_page):
+        captcha_id, captcha_image = self._fetch_captcha(signup_page)
         captcha_code = Client._display_captcha(captcha_image)
         return Captcha(captcha_id, captcha_code)
 
-    def _fetch_captcha(self, setup_page):
-        create_form = Client._get_create_form(setup_page)
-        captcha_id = create_form.find(
+    def _fetch_captcha(self, signup_page):
+        html = bs4.BeautifulSoup(signup_page)
+
+        container = Client._get_captcha_container(html)
+        captcha_id = container.find(
             'input',
             {'id': 'id_captcha_0'}
         )['value']
-        captcha_path = create_form.find(
+        captcha_path = container.find(
             'img',
             {'class': 'captcha'}
         )['src']
@@ -98,14 +100,14 @@ class Client(object):
 
     def _login(self, captcha):
         login_response = self._session.post(
-            self._setup_url,
+            self._signup_url,
             data={
+                'payment_method': 'paypal',
                 'captcha_0': captcha.id,
                 'captcha_1': captcha.code,
                 'create_account': 'create',
             }
         )
-        Client._validate_login(login_response.content)
 
         return Client._extract_account_number(login_response.content)
 
@@ -134,9 +136,8 @@ class Client(object):
             raise
 
     @staticmethod
-    def _get_create_form(page_content):
-        html = bs4.BeautifulSoup(page_content)
-        return html.find('form', {'id': 'create_account'})
+    def _get_captcha_container(html):
+        return html.find('div', {'class': 'captcha'})
 
     @staticmethod
     def _display_captcha(image):
@@ -147,25 +148,22 @@ class Client(object):
         return code
 
     @staticmethod
-    def _validate_login(setup_page):
-        create_form = Client._get_create_form(setup_page)
-        if create_form is not None:
-            errors = create_form.find(
-                'ul',
-                {'class': 'errorlist'}
-            ).find_all('li')
+    def _extract_account_number(signup_page):
+        html = bs4.BeautifulSoup(signup_page)
+
+        try:
+            return html.find('p', {'class': 'acc-number'}).contents[2].strip()
+        except AttributeError:
+            error = Client._get_captcha_container(html).find(
+                'p',
+                {'class': 'text-danger'}
+            ).contents[2].strip()
 
             raise AccountError(
                 'Failed to create account',
-                [error.text for error in errors],
-                setup_page
+                [error],
+                signup_page
             )
-
-    @staticmethod
-    def _extract_account_number(setup_page):
-        html = bs4.BeautifulSoup(setup_page)
-        label = html(text='Account number:')[0]
-        return label.parent.next_sibling.strip()
 
     @staticmethod
     def _log_errors(exception):
