@@ -16,6 +16,7 @@ from __future__ import (
 import argparse
 import os
 import signal
+import stat
 
 from mullvad import files, firewall, network, output, webapp
 
@@ -37,6 +38,11 @@ def bootstrap(args):
         output.die('Failed to download config: {}'.format(error.message))
     else:
         config_dir = files.unzip(config_file)
+
+        # https://bugs.python.org/issue15795
+        output.itemize('Fixing permissions', level=1)
+        os.chmod(os.path.join(config_dir, 'update-resolv-conf'), stat.S_IRWXU)
+
         tunnel_prefix = files.grep(
             '^dev (\w+)$',
             os.path.join(config_dir, 'mullvad_linux.conf')
