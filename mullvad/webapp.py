@@ -55,7 +55,9 @@ class Client(object):
     def create_account(self, signup_page=None):
 
         if not signup_page:
-            signup_page = self._session.get(self._signup_url).content
+            response = self._session.get(self._signup_url)
+            response.raise_for_status()
+            signup_page = response.content
 
         captcha = self._solve_captcha(signup_page)
 
