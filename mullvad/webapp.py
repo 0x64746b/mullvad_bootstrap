@@ -37,7 +37,7 @@ class Client(object):
 
     DOMAIN = 'https://mullvad.net'
     SIGNUP_PATH = '/account/create/'
-    CONFIG_PATH = '/en/config/?server={}'
+    CONFIG_PATH = '/download/config/'
 
     def __init__(self):
 
@@ -118,8 +118,19 @@ class Client(object):
     def download_config(self, exit_country):
         output.itemize('Downloading config...')
 
-        downloaded_config = self._session.get(
-            self._config_url.format(exit_country),
+        config_page = bs4.BeautifulSoup(self._session.get(self._config_url).content)
+        other_platforms = config_page.find('input', {'name':'type', 'value':'zip'}).parent
+
+        downloaded_config = self._session.post(
+            self._config_url,
+            headers={'referer': self._config_url},
+            data={
+                'csrfmiddlewaretoken': other_platforms.find('input', {'name': 'csrfmiddlewaretoken'})['value'],
+                'type': other_platforms.find('input', {'name': 'type'})['value'],
+                'account_number': other_platforms.find('input', {'name': 'account_number'})['value'],
+                'port': other_platforms.find('option', {'selected': 'selected'})['value'],
+                'country': exit_country,
+            },
             stream=True
         )
         downloaded_config.raise_for_status()
