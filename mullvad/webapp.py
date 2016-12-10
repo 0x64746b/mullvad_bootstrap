@@ -11,6 +11,7 @@ from __future__ import (
 
 import collections
 import os
+import re
 import tempfile
 import urlparse
 
@@ -21,23 +22,22 @@ import sh
 from . import output
 
 
-Captcha = collections.namedtuple('Captcha', ['id', 'code'])
+Captcha = collections.namedtuple('Captcha', ['id', 'code', 'csrf'])
 
 
 class AccountError(Exception):
 
-    def __init__(self, message, errors, response, *args):
-        super(AccountError, self).__init__(message, errors, response, *args)
+    def __init__(self, message, response, *args):
+        super(AccountError, self).__init__(message, response, *args)
         self.message = message
-        self.errors = errors
         self.response = response
 
 
 class Client(object):
 
     DOMAIN = 'https://mullvad.net'
-    SIGNUP_PATH = '/en/signup/'
-    CONFIG_PATH = '/en/config/?server={}'
+    SIGNUP_PATH = '/account/create/'
+    CONFIG_PATH = '/download/config/'
 
     def __init__(self):
 
@@ -55,14 +55,16 @@ class Client(object):
     def create_account(self, signup_page=None):
 
         if not signup_page:
-            signup_page = self._session.get(self._signup_url).content
+            response = self._session.get(self._signup_url)
+            response.raise_for_status()
+            signup_page = response.content
 
         captcha = self._solve_captcha(signup_page)
 
         try:
             account_number = self._login(captcha)
         except AccountError as exception:
-            Client._log_errors(exception)
+            output.error(exception.message)
             return self._retry(
                 self.create_account,
                 exception.response
@@ -74,38 +76,40 @@ class Client(object):
         return account_number
 
     def _solve_captcha(self, signup_page):
-        captcha_id, captcha_image = self._fetch_captcha(signup_page)
+        captcha_id, captcha_image, csrf_token = self._fetch_captcha(signup_page)
         captcha_code = Client._display_captcha(captcha_image)
-        return Captcha(captcha_id, captcha_code)
+        return Captcha(captcha_id, captcha_code, csrf_token)
 
     def _fetch_captcha(self, signup_page):
         html = bs4.BeautifulSoup(signup_page)
-
-        container = Client._get_captcha_container(html)
-        captcha_id = container.find(
+        captcha_id = html.find(
             'input',
             {'id': 'id_captcha_0'}
         )['value']
-        captcha_path = container.find(
+        captcha_path = html.find(
             'img',
             {'class': 'captcha'}
         )['src']
+        csrf_token = html.find(
+            'input',
+            {'name': 'csrfmiddlewaretoken'}
+        )['value']
 
         captcha_image = self._session.get(
             urlparse.urljoin(Client.DOMAIN, captcha_path),
             stream=True
         )
 
-        return captcha_id, captcha_image.raw
+        return captcha_id, captcha_image.raw, csrf_token
 
     def _login(self, captcha):
         login_response = self._session.post(
             self._signup_url,
+            headers={'referer': self._signup_url},
             data={
-                'payment_method': 'paypal',
                 'captcha_0': captcha.id,
                 'captcha_1': captcha.code,
-                'create_account': 'create',
+                'csrfmiddlewaretoken': captcha.csrf,
             }
         )
 
@@ -114,8 +118,19 @@ class Client(object):
     def download_config(self, exit_country):
         output.itemize('Downloading config...')
 
-        downloaded_config = self._session.get(
-            self._config_url.format(exit_country),
+        config_page = bs4.BeautifulSoup(self._session.get(self._config_url).content)
+        other_platforms = config_page.find('input', {'name':'type', 'value':'zip'}).parent
+
+        downloaded_config = self._session.post(
+            self._config_url,
+            headers={'referer': self._config_url},
+            data={
+                'csrfmiddlewaretoken': other_platforms.find('input', {'name': 'csrfmiddlewaretoken'})['value'],
+                'type': other_platforms.find('input', {'name': 'type'})['value'],
+                'account_number': other_platforms.find('input', {'name': 'account_number'})['value'],
+                'port': other_platforms.find('option', {'selected': 'selected'})['value'],
+                'country': exit_country,
+            },
             stream=True
         )
         downloaded_config.raise_for_status()
@@ -136,10 +151,6 @@ class Client(object):
             raise
 
     @staticmethod
-    def _get_captcha_container(html):
-        return html.find('div', {'class': 'captcha'})
-
-    @staticmethod
     def _display_captcha(image):
         viewer = sh.display(_in=image, _bg=True)
         code = raw_input('Enter captcha: ')
@@ -152,22 +163,9 @@ class Client(object):
         html = bs4.BeautifulSoup(signup_page)
 
         try:
-            return html.find('p', {'class': 'acc-number'}).contents[2].strip()
+            return html.find('h3', text=re.compile('Your account number')).text.split()[-1]
         except AttributeError:
-            error = Client._get_captcha_container(html).find(
-                'p',
-                {'class': 'text-danger'}
-            ).contents[2].strip()
-
             raise AccountError(
-                'Failed to create account',
-                [error],
+                'Failed to create account (probably the CAPTCHA was wrong)',
                 signup_page
             )
-
-    @staticmethod
-    def _log_errors(exception):
-        output.error(exception.message)
-        if hasattr(exception, 'errors'):
-            for error in exception.errors:
-                output.error(' - {}'.format(error))
