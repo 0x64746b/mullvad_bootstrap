@@ -8,7 +8,7 @@ from __future__ import (
     unicode_literals,
 )
 
-
+import difflib
 import re
 import socket
 import time
@@ -217,7 +217,9 @@ def get_local_networks(tunnel_device):
 
 
 def get_vpn_gateway(_output_level=2):
-    route = sh.route(_bg=True)
+    external_ip = get_connection_info()['ip']
+
+    route = sh.ip('r', _bg=True)
 
     with output.Attempts(
         'Resolving IP of VPN gateway',
@@ -233,15 +235,29 @@ def get_vpn_gateway(_output_level=2):
         if not attempts.successful:
             raise NetworkError('Failed to resolve IP of VPN gateway')
 
+    gateway_ip_candidates = difflib.get_close_matches(
+        external_ip,
+        route.stdout.split(),
+    )
+
+    if not gateway_ip_candidates:
+        raise NetworkError(
+            'No candidates for VPN gateway IP identified. Nothing is similar'
+            ' to {} in {}'.format(external_ip, route.stdout))
+    elif len(gateway_ip_candidates) > 1:
+        raise NetworkError(
+            'Multiple candidates for VPN gateway IPs identified: {} are'
+            ' similar to {}'.format(gateway_ip_candidates, external_ip)
+        )
+    else:
+        gateway_ip = gateway_ip_candidates.pop()
+
     row = re.search(
-        '^(?P<domain>.+\.mullvad\.net) .+ (?P<device>.+)$',
+        '^{} via .+ dev (?P<device>.+)$'.format(gateway_ip),
         route.stdout,
         re.MULTILINE
     )
-
-    if row:
-        gateway_ip = socket.gethostbyname(row.group('domain'))
-    else:
+    if not row:
         raise NetworkError('No route to VPN gateway detected.')
 
-    return (row.group('device'), gateway_ip)
+    return row.group('device'), gateway_ip

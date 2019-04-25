@@ -73,7 +73,7 @@ def block_traffic(tunnel_device):
         '-i', vpn_gate[0],
         '-p', 'udp',
         '-s', vpn_gate[1],
-        '--sport', '1300',
+        '--sport', '1301',
         '-j', 'ACCEPT'
     )
     sh.iptables(
@@ -81,7 +81,7 @@ def block_traffic(tunnel_device):
         '-o', vpn_gate[0],
         '-p', 'udp',
         '-d', vpn_gate[1],
-        '--dport', '1300',
+        '--dport', '1301',
         '-j', 'ACCEPT'
     )
 
@@ -90,7 +90,7 @@ def block_traffic(tunnel_device):
     sh.iptables('-P', 'OUTPUT', 'DROP')
     sh.iptables('-P', 'FORWARD', 'DROP')
 
-    for line in sh.iptables('-vL', _iter=True):
+    for line in sh.iptables('-vnL', _iter=True):
         print(line.rstrip())
 
 
