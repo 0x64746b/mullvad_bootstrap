@@ -219,7 +219,7 @@ def get_local_networks(tunnel_device):
 def get_vpn_gateway(_output_level=2):
     external_ip = get_connection_info()['ip']
 
-    route = sh.ip('r', _bg=True)
+    ip_r = sh.ip('r', _bg=True)
 
     with output.Attempts(
         'Resolving IP of VPN gateway',
@@ -227,7 +227,7 @@ def get_vpn_gateway(_output_level=2):
         _output_level=_output_level
     ) as attempts:
         for attempt in attempts:
-            if route.process.is_alive():
+            if ip_r.process.is_alive():
                 attempt.passed()
             else:
                 attempt.successful = True
@@ -237,13 +237,13 @@ def get_vpn_gateway(_output_level=2):
 
     gateway_ip_candidates = difflib.get_close_matches(
         external_ip,
-        route.stdout.split(),
+        ip_r.stdout.split(),
     )
 
     if not gateway_ip_candidates:
         raise NetworkError(
             'No candidates for VPN gateway IP identified. Nothing is similar'
-            ' to {} in {}'.format(external_ip, route.stdout))
+            ' to {} in {}'.format(external_ip, ip_r.stdout))
     elif len(gateway_ip_candidates) > 1:
         raise NetworkError(
             'Multiple candidates for VPN gateway IPs identified: {} are'
@@ -254,7 +254,7 @@ def get_vpn_gateway(_output_level=2):
 
     row = re.search(
         '^{} via .+ dev (?P<device>\S+) $'.format(gateway_ip),
-        route.stdout,
+        ip_r.stdout,
         re.MULTILINE
     )
     if not row:
