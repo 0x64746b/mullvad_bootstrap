@@ -217,6 +217,10 @@ def get_local_networks(tunnel_device):
 
 
 def get_vpn_gateway(_output_level=2):
+    # TODO: We could just parse this from the `remote` options in the `openvpn`
+    #       conf and check against an existing route.
+    # TODO: Extract the corresponding port for the firewall rule too, while
+    #       you're at it!
     external_ip = get_connection_info()['ip']
 
     ip_r = sh.ip('r', _bg=True)
