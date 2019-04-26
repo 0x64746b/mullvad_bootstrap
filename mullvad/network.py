@@ -253,7 +253,7 @@ def get_vpn_gateway(_output_level=2):
         gateway_ip = gateway_ip_candidates.pop()
 
     row = re.search(
-        '^{} via .+ dev (?P<device>.+)$'.format(gateway_ip),
+        '^{} via .+ dev (?P<device>\S+) $'.format(gateway_ip),
         route.stdout,
         re.MULTILINE
     )

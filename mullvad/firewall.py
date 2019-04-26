@@ -48,6 +48,7 @@ def block_traffic(tunnel_device):
     sh.iptables('-P', 'FORWARD', 'ACCEPT')
     sh.iptables('-P', 'OUTPUT', 'ACCEPT')
     sh.iptables('-F')
+    sh.iptables('-X')
 
     output.itemize('Allowing traffic over loopback interface', level=1)
     sh.iptables('-I', 'INPUT', '-i', 'lo', '-j', 'ACCEPT')
