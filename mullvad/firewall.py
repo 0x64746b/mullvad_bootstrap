@@ -86,6 +86,32 @@ def block_traffic(tunnel_device):
         '-j', 'ACCEPT'
     )
 
+    output.itemize('Logging dropped traffic', level=1)
+    sh.iptables(
+        '-A', 'INPUT',
+        '-m', 'limit',
+        '--limit', '1/min',
+        '-j', 'LOG',
+        '--log-prefix', 'iptables:dropped input: ',
+        '--log-level', '4',
+    )
+    sh.iptables(
+        '-A', 'OUTPUT',
+        '-m', 'limit',
+        '--limit', '1/min',
+        '-j', 'LOG',
+        '--log-prefix', 'iptables:dropped output: ',
+        '--log-level', '4',
+    )
+    sh.iptables(
+        '-A', 'FORWARD',
+        '-m', 'limit',
+        '--limit', '1/min',
+        '-j', 'LOG',
+        '--log-prefix', 'iptables:dropped forward: ',
+        '--log-level', '4',
+    )
+
     output.itemize('Dropping all other traffic', level=1)
     sh.iptables('-P', 'INPUT', 'DROP')
     sh.iptables('-P', 'OUTPUT', 'DROP')
